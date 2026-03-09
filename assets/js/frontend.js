@@ -16,12 +16,13 @@
         var format = $btn.data('format');
         var nonce = $btn.data('nonce');
 
-        // Get current post ID from body class or a global variable.
+        // Get current post ID from body class.
+        // WP adds postid-{ID} for posts/CPTs and page-id-{ID} for pages.
         var postId = 0;
         var bodyClasses = $('body').attr('class') || '';
-        var match = bodyClasses.match(/postid-(\d+)|page-id-(\d+)/);
+        var match = bodyClasses.match(/(?:^|\s)(?:postid|page-id)-(\d+)(?:\s|$)/);
         if (match) {
-            postId = match[1] || match[2];
+            postId = match[1];
         }
 
         $btn.addClass('dg-loading').prop('disabled', true);

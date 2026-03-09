@@ -105,6 +105,14 @@ class DG_Shortcode {
         $extra_class = sanitize_html_class( $atts['class'] );
         $nonce       = wp_create_nonce( 'dg_download_' . $template_id );
 
+        // Signal that the shortcode is being rendered (for asset enqueuing).
+        do_action( 'dg_shortcode_rendered' );
+
+        // Ensure assets are enqueued even when shortcode is in a template/page builder.
+        if ( ! wp_script_is( 'dg-frontend', 'enqueued' ) ) {
+            $this->enqueue_assets();
+        }
+
         ob_start();
         ?>
         <div class="dg-download-wrapper <?php echo esc_attr( $extra_class ); ?>" data-template-id="<?php echo esc_attr( $template_id ); ?>">
@@ -150,9 +158,13 @@ class DG_Shortcode {
      * Enqueue frontend assets (only when shortcode is present).
      */
     public function enqueue_assets() {
-        // Only enqueue if shortcode might be used.
+        // Check the current post content for the shortcode.
         global $post;
-        if ( ! $post || ! has_shortcode( $post->post_content, 'document_generator' ) ) {
+        $has_shortcode = $post && has_shortcode( $post->post_content, 'document_generator' );
+
+        // Also check if the shortcode was already rendered during this request
+        // (e.g., via page builder templates, Toolset Content Templates, theme templates).
+        if ( ! $has_shortcode && ! did_action( 'dg_shortcode_rendered' ) ) {
             return;
         }
 
@@ -209,7 +221,9 @@ class DG_Shortcode {
             $format = 'docx';
         }
 
-        // Use target page if configured and no post_id provided.
+        // Use target page as fallback if no post_id detected from the frontend.
+        // The frontend auto-detects the current post from body classes.
+        // Target page provides context when the shortcode is on a page without a detectable post ID.
         if ( ! $post_id ) {
             $target_page = get_post_meta( $template_id, '_dg_target_page', true );
             if ( $target_page ) {
