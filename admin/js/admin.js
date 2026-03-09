@@ -14,8 +14,9 @@
 
         bindEvents: function() {
             // File upload — clicking anywhere in the upload prompt area triggers file browse.
-            $('#dg-browse-btn, .dg-upload-prompt').on('click', function(e) {
-                if (e.target.id !== 'dg-file-input') {
+            $('.dg-upload-prompt').on('click', function(e) {
+                if (!$(e.target).is('#dg-file-input')) {
+                    e.stopPropagation();
                     $('#dg-file-input').trigger('click');
                 }
             });
