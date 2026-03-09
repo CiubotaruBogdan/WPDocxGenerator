@@ -22,8 +22,29 @@ define( 'DG_VERSION', '1.0' );
 define( 'DG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DG_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'DG_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
-define( 'DG_TEMPLATES_DIR', DG_PLUGIN_DIR . 'templates/' );
 define( 'DG_PLACEHOLDER_PATTERN', '/#([a-zA-Z0-9_]+)#/' );
+
+/**
+ * Get the templates directory path (inside wp-content/uploads, guaranteed writable).
+ */
+function dg_get_templates_dir() {
+    $upload_dir = wp_upload_dir();
+    $dir = $upload_dir['basedir'] . '/dg-templates/';
+    if ( ! file_exists( $dir ) ) {
+        wp_mkdir_p( $dir );
+        // Protect directory.
+        $htaccess = $dir . '.htaccess';
+        if ( ! file_exists( $htaccess ) ) {
+            file_put_contents( $htaccess, "Order Deny,Allow\nDeny from all\n" );
+        }
+        // Also add index.php for extra protection.
+        $index = $dir . 'index.php';
+        if ( ! file_exists( $index ) ) {
+            file_put_contents( $index, "<?php\n// Silence is golden.\n" );
+        }
+    }
+    return $dir;
+}
 
 /**
  * Main plugin class.
@@ -70,16 +91,8 @@ final class Document_Generator {
         $this->register_post_type();
         flush_rewrite_rules();
 
-        $upload_dir = DG_TEMPLATES_DIR;
-        if ( ! file_exists( $upload_dir ) ) {
-            wp_mkdir_p( $upload_dir );
-        }
-
-        // Protect templates directory.
-        $htaccess = $upload_dir . '.htaccess';
-        if ( ! file_exists( $htaccess ) ) {
-            file_put_contents( $htaccess, "Order Deny,Allow\nDeny from all\n" );
-        }
+        // Ensure templates directory exists.
+        dg_get_templates_dir();
     }
 
     public function deactivate() {

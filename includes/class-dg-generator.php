@@ -28,7 +28,7 @@ class DG_Generator {
         $filename = get_post_meta( $template_id, '_dg_filename', true );
         $mapping  = get_post_meta( $template_id, '_dg_mapping', true );
 
-        if ( ! $filename || ! file_exists( DG_TEMPLATES_DIR . $filename ) ) {
+        if ( ! $filename || ! file_exists( dg_get_templates_dir() . $filename ) ) {
             return new WP_Error( 'template_missing', __( 'Template file not found.', 'document-generator' ) );
         }
 
@@ -36,7 +36,7 @@ class DG_Generator {
             return new WP_Error( 'no_mapping', __( 'No field mapping configured for this template.', 'document-generator' ) );
         }
 
-        $template_path = DG_TEMPLATES_DIR . $filename;
+        $template_path = dg_get_templates_dir() . $filename;
         $user_id       = get_current_user_id();
 
         // Resolve all field values.

@@ -138,8 +138,9 @@ class DG_Admin {
 
         // Generate unique filename.
         $filename = sanitize_file_name( $file['name'] );
-        $filename = wp_unique_filename( DG_TEMPLATES_DIR, $filename );
-        $filepath = DG_TEMPLATES_DIR . $filename;
+        $templates_dir = dg_get_templates_dir();
+        $filename = wp_unique_filename( $templates_dir, $filename );
+        $filepath = $templates_dir . $filename;
 
         if ( ! move_uploaded_file( $file['tmp_name'], $filepath ) ) {
             wp_send_json_error( __( 'Failed to save uploaded file.', 'document-generator' ) );
@@ -182,7 +183,7 @@ class DG_Admin {
             wp_send_json_error( __( 'Title is required.', 'document-generator' ) );
         }
 
-        if ( empty( $filename ) || ! file_exists( DG_TEMPLATES_DIR . $filename ) ) {
+        if ( empty( $filename ) || ! file_exists( dg_get_templates_dir() . $filename ) ) {
             wp_send_json_error( __( 'Template file not found. Please upload a DOCX file.', 'document-generator' ) );
         }
 
@@ -251,8 +252,8 @@ class DG_Admin {
 
         // Delete the DOCX file.
         $filename = get_post_meta( $template_id, '_dg_filename', true );
-        if ( $filename && file_exists( DG_TEMPLATES_DIR . $filename ) ) {
-            unlink( DG_TEMPLATES_DIR . $filename );
+        if ( $filename && file_exists( dg_get_templates_dir() . $filename ) ) {
+            unlink( dg_get_templates_dir() . $filename );
         }
 
         wp_delete_post( $template_id, true );
