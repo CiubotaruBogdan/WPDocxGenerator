@@ -1,0 +1,285 @@
+/* Document Generator - Admin Styles */
+
+.dg-wrap {
+    max-width: 1200px;
+}
+
+/* Empty state */
+.dg-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.dg-empty-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #c3c4c7;
+    margin-bottom: 20px;
+}
+
+.dg-empty-state h2 {
+    margin: 10px 0;
+    color: #1d2327;
+}
+
+.dg-empty-state p {
+    color: #646970;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* Sections */
+.dg-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.dg-section h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Upload area */
+.dg-upload-area {
+    border: 2px dashed #c3c4c7;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.2s ease;
+    background: #f6f7f7;
+}
+
+.dg-upload-area.dg-drag-over {
+    border-color: #2271b1;
+    background: #f0f6fc;
+}
+
+.dg-upload-area.has-file {
+    border-style: solid;
+    background: #fff;
+}
+
+.dg-upload-prompt .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #c3c4c7;
+}
+
+.dg-upload-prompt p {
+    margin: 10px 0;
+    color: #646970;
+}
+
+.dg-current-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    justify-content: center;
+}
+
+.dg-current-file .dashicons {
+    color: #2271b1;
+}
+
+.dg-current-file .dg-filename {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* Progress bar */
+.dg-progress-bar {
+    width: 100%;
+    max-width: 300px;
+    height: 8px;
+    background: #dcdcde;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 10px auto;
+}
+
+.dg-progress-fill {
+    height: 100%;
+    background: #2271b1;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0;
+}
+
+/* Mapping table */
+.dg-mapping-list {
+    margin-top: 15px;
+}
+
+.dg-mapping-list th {
+    font-weight: 600;
+}
+
+.dg-mapping-list .column-placeholder {
+    width: 180px;
+}
+
+.dg-mapping-list .column-source {
+    width: 200px;
+}
+
+.dg-mapping-list .column-field {
+    width: 250px;
+}
+
+.dg-mapping-list .column-preview {
+    width: 100px;
+}
+
+.dg-mapping-list select,
+.dg-mapping-list input[type="text"] {
+    width: 100%;
+    max-width: 100%;
+}
+
+.dg-mapping-row code {
+    background: #f0f0f1;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #1d2327;
+}
+
+.dg-preview-value {
+    color: #646970;
+    font-size: 12px;
+}
+
+/* Repeat blocks */
+#dg-repeat-blocks {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.dg-repeat-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.dg-repeat-block strong {
+    min-width: 180px;
+    font-family: monospace;
+}
+
+.dg-repeat-block select {
+    min-width: 200px;
+}
+
+/* Shortcode output */
+.dg-shortcode-output {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+}
+
+.dg-shortcode-output code {
+    flex: 1;
+    padding: 8px 12px;
+    background: #1d2327;
+    color: #50c878;
+    border-radius: 3px;
+    font-size: 14px;
+}
+
+/* Shortcode copy in list */
+.dg-shortcode-display {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.dg-shortcode-display:hover {
+    background: #dcdcde;
+}
+
+/* Badge */
+.dg-badge {
+    display: inline-block;
+    background: #2271b1;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Save status */
+.dg-save-status {
+    margin-left: 15px;
+    font-size: 14px;
+}
+
+.dg-save-status.dg-success {
+    color: #00a32a;
+}
+
+.dg-save-status.dg-error {
+    color: #d63638;
+}
+
+/* Submit section */
+.dg-submit-section {
+    display: flex;
+    align-items: center;
+}
+
+/* Info box */
+.dg-info-box {
+    margin-top: 20px;
+    padding: 15px 20px;
+    background: #f0f6fc;
+    border: 1px solid #c3c4c7;
+    border-left: 4px solid #2271b1;
+    border-radius: 4px;
+}
+
+.dg-info-box h3 {
+    margin-top: 0;
+}
+
+.dg-info-box ol {
+    margin-bottom: 0;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .dg-mapping-list .column-preview {
+        display: none;
+    }
+
+    .dg-shortcode-output {
+        flex-direction: column;
+    }
+
+    .dg-repeat-block {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

@@ -1,0 +1,152 @@
+/* Document Generator - Frontend Styles */
+
+.dg-download-wrapper {
+    display: inline-block;
+    margin: 10px 0;
+}
+
+.dg-format-selector {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.dg-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+.dg-download-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dg-download-btn:active {
+    transform: translateY(0);
+}
+
+.dg-download-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.dg-btn-docx {
+    background: #2b579a;
+    color: #fff;
+}
+
+.dg-btn-docx:hover {
+    background: #1e3f6f;
+}
+
+.dg-btn-pdf {
+    background: #d32f2f;
+    color: #fff;
+}
+
+.dg-btn-pdf:hover {
+    background: #b71c1c;
+}
+
+/* Icons */
+.dg-icon {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    position: relative;
+}
+
+.dg-icon-docx::before {
+    content: 'W';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.dg-icon-pdf::before {
+    content: 'P';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Loading spinner */
+.dg-download-btn.dg-loading {
+    position: relative;
+    color: transparent;
+}
+
+.dg-download-btn.dg-loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-top: -10px;
+    margin-left: -10px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: dg-spin 0.6s linear infinite;
+}
+
+@keyframes dg-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Status message */
+.dg-status {
+    margin-top: 8px;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+.dg-status.dg-error {
+    background: #fce4e4;
+    color: #d32f2f;
+    border: 1px solid #f5c6c6;
+}
+
+.dg-status.dg-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+/* Responsive */
+@media screen and (max-width: 480px) {
+    .dg-format-selector {
+        flex-direction: column;
+    }
+
+    .dg-download-btn {
+        justify-content: center;
+    }
+}
