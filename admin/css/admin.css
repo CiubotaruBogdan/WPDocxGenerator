@@ -268,6 +268,39 @@
     margin-bottom: 0;
 }
 
+/* Button style grid */
+.dg-button-style-grid {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    gap: 15px 25px;
+    align-items: end;
+}
+
+.dg-button-style-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: #1d2327;
+}
+
+.dg-button-style-grid input[type="color"] {
+    width: 50px;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Field group headers */
+.dg-field-optgroup-label {
+    font-weight: 600;
+    color: #1d2327;
+    padding: 4px 8px;
+    background: #f0f0f1;
+}
+
 /* Responsive */
 @media screen and (max-width: 782px) {
     .dg-mapping-list .column-preview {

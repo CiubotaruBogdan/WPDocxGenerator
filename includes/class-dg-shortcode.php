@@ -56,17 +56,63 @@ class DG_Shortcode {
             $button_text = __( 'Download Document', 'document-generator' );
         }
 
+        // Format: shortcode attribute overrides saved setting.
+        $saved_format = get_post_meta( $template_id, '_dg_button_format', true );
+        if ( empty( $saved_format ) ) {
+            $saved_format = 'both';
+        }
+        $forced_format = sanitize_text_field( $atts['format'] );
+        if ( empty( $forced_format ) ) {
+            $forced_format = $saved_format;
+        }
+
+        // Button style.
+        $button_style = get_post_meta( $template_id, '_dg_button_style', true );
+        $style_defaults = array(
+            'bg_color'      => '#2b579a',
+            'text_color'    => '#ffffff',
+            'border_color'  => '',
+            'border_width'  => '0',
+            'font_size'     => '15',
+            'border_radius' => '6',
+        );
+        if ( ! is_array( $button_style ) ) {
+            $button_style = $style_defaults;
+        } else {
+            $button_style = wp_parse_args( $button_style, $style_defaults );
+        }
+
+        $inline_style = sprintf(
+            'background-color:%s;color:%s;border:%spx solid %s;font-size:%spx;border-radius:%spx;',
+            esc_attr( $button_style['bg_color'] ),
+            esc_attr( $button_style['text_color'] ),
+            esc_attr( $button_style['border_width'] ),
+            esc_attr( $button_style['border_color'] ?: $button_style['bg_color'] ),
+            esc_attr( $button_style['font_size'] ),
+            esc_attr( $button_style['border_radius'] )
+        );
+
+        // PDF button uses slightly different color by default (red-ish).
+        $pdf_style = $inline_style;
+        if ( $button_style['bg_color'] === '#2b579a' ) {
+            // Only override if using default color.
+            $pdf_style = str_replace( 'background-color:#2b579a', 'background-color:#d32f2f', $pdf_style );
+            if ( empty( $button_style['border_color'] ) || $button_style['border_color'] === '#2b579a' ) {
+                $pdf_style = str_replace( 'solid #2b579a', 'solid #d32f2f', $pdf_style );
+            }
+        }
+
         $extra_class = sanitize_html_class( $atts['class'] );
         $nonce       = wp_create_nonce( 'dg_download_' . $template_id );
-        $forced_format = sanitize_text_field( $atts['format'] );
 
         ob_start();
         ?>
         <div class="dg-download-wrapper <?php echo esc_attr( $extra_class ); ?>" data-template-id="<?php echo esc_attr( $template_id ); ?>">
-            <?php if ( empty( $forced_format ) ) : ?>
+            <?php if ( 'both' === $forced_format ) : ?>
                 <div class="dg-format-selector">
                     <button type="button"
                             class="dg-download-btn dg-btn-docx"
+                            style="<?php echo $inline_style; ?>"
                             data-template-id="<?php echo esc_attr( $template_id ); ?>"
                             data-format="docx"
                             data-nonce="<?php echo esc_attr( $nonce ); ?>">
@@ -75,6 +121,7 @@ class DG_Shortcode {
                     </button>
                     <button type="button"
                             class="dg-download-btn dg-btn-pdf"
+                            style="<?php echo $pdf_style; ?>"
                             data-template-id="<?php echo esc_attr( $template_id ); ?>"
                             data-format="pdf"
                             data-nonce="<?php echo esc_attr( $nonce ); ?>">
@@ -85,6 +132,7 @@ class DG_Shortcode {
             <?php else : ?>
                 <button type="button"
                         class="dg-download-btn dg-btn-<?php echo esc_attr( $forced_format ); ?>"
+                        style="<?php echo ( 'pdf' === $forced_format ? $pdf_style : $inline_style ); ?>"
                         data-template-id="<?php echo esc_attr( $template_id ); ?>"
                         data-format="<?php echo esc_attr( $forced_format ); ?>"
                         data-nonce="<?php echo esc_attr( $nonce ); ?>">

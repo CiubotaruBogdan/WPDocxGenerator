@@ -11,6 +11,15 @@ $mapping       = array();
 $allowed_roles = array();
 $button_text   = __( 'Download Document', 'document-generator' );
 $target_page   = 0;
+$button_format = 'both';
+$button_style  = array(
+    'bg_color'     => '#2b579a',
+    'text_color'   => '#ffffff',
+    'border_color' => '',
+    'border_width' => '0',
+    'font_size'    => '15',
+    'border_radius' => '6',
+);
 
 if ( $is_edit ) {
     $template = get_post( $template_id );
@@ -21,6 +30,11 @@ if ( $is_edit ) {
         $allowed_roles = get_post_meta( $template_id, '_dg_allowed_roles', true );
         $button_text   = get_post_meta( $template_id, '_dg_button_text', true );
         $target_page   = get_post_meta( $template_id, '_dg_target_page', true );
+        $button_format = get_post_meta( $template_id, '_dg_button_format', true );
+        $saved_style   = get_post_meta( $template_id, '_dg_button_style', true );
+        if ( is_array( $saved_style ) ) {
+            $button_style = wp_parse_args( $saved_style, $button_style );
+        }
     }
     if ( ! is_array( $mapping ) ) {
         $mapping = array();
@@ -31,14 +45,22 @@ if ( $is_edit ) {
     if ( empty( $button_text ) ) {
         $button_text = __( 'Download Document', 'document-generator' );
     }
+    if ( empty( $button_format ) ) {
+        $button_format = 'both';
+    }
 }
 
 // Get all WP roles.
 $wp_roles = wp_roles()->get_names();
 
-// Get all pages for target page selector.
+// Get all pages for target page selector, including custom post types.
+$target_post_types = array( 'page', 'post' );
+$custom_post_types = get_post_types( array( 'public' => true, '_builtin' => false ), 'objects' );
+foreach ( $custom_post_types as $cpt ) {
+    $target_post_types[] = $cpt->name;
+}
 $all_pages = get_posts( array(
-    'post_type'      => array( 'page', 'post' ),
+    'post_type'      => $target_post_types,
     'post_status'    => 'publish',
     'posts_per_page' => -1,
     'orderby'        => 'title',
@@ -112,6 +134,59 @@ $sources = $fields_handler->get_sources();
                     </td>
                 </tr>
                 <tr>
+                    <th><label for="dg-button-format"><?php esc_html_e( 'Download Format', 'document-generator' ); ?></label></th>
+                    <td>
+                        <select id="dg-button-format" name="button_format">
+                            <option value="both" <?php selected( $button_format, 'both' ); ?>><?php esc_html_e( 'Both (DOCX + PDF)', 'document-generator' ); ?></option>
+                            <option value="docx" <?php selected( $button_format, 'docx' ); ?>><?php esc_html_e( 'DOCX only', 'document-generator' ); ?></option>
+                            <option value="pdf" <?php selected( $button_format, 'pdf' ); ?>><?php esc_html_e( 'PDF only', 'document-generator' ); ?></option>
+                        </select>
+                        <p class="description"><?php esc_html_e( 'Choose which download formats to show on the frontend.', 'document-generator' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Button Style', 'document-generator' ); ?></th>
+                    <td>
+                        <div class="dg-button-style-grid">
+                            <label>
+                                <?php esc_html_e( 'Background Color', 'document-generator' ); ?>
+                                <input type="color" name="button_style[bg_color]" value="<?php echo esc_attr( $button_style['bg_color'] ); ?>">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Text Color', 'document-generator' ); ?>
+                                <input type="color" name="button_style[text_color]" value="<?php echo esc_attr( $button_style['text_color'] ); ?>">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Border Color', 'document-generator' ); ?>
+                                <input type="color" name="button_style[border_color]" value="<?php echo esc_attr( $button_style['border_color'] ?: '#2b579a' ); ?>">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Border Width (px)', 'document-generator' ); ?>
+                                <input type="number" name="button_style[border_width]" value="<?php echo esc_attr( $button_style['border_width'] ); ?>" min="0" max="10" step="1" style="width:70px;">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Font Size (px)', 'document-generator' ); ?>
+                                <input type="number" name="button_style[font_size]" value="<?php echo esc_attr( $button_style['font_size'] ); ?>" min="10" max="30" step="1" style="width:70px;">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Border Radius (px)', 'document-generator' ); ?>
+                                <input type="number" name="button_style[border_radius]" value="<?php echo esc_attr( $button_style['border_radius'] ); ?>" min="0" max="50" step="1" style="width:70px;">
+                            </label>
+                        </div>
+                        <div class="dg-button-preview" style="margin-top:15px;">
+                            <p><strong><?php esc_html_e( 'Preview:', 'document-generator' ); ?></strong></p>
+                            <button type="button" id="dg-btn-preview" class="dg-download-btn" style="
+                                background-color: <?php echo esc_attr( $button_style['bg_color'] ); ?>;
+                                color: <?php echo esc_attr( $button_style['text_color'] ); ?>;
+                                border: <?php echo esc_attr( $button_style['border_width'] ); ?>px solid <?php echo esc_attr( $button_style['border_color'] ?: $button_style['bg_color'] ); ?>;
+                                font-size: <?php echo esc_attr( $button_style['font_size'] ); ?>px;
+                                border-radius: <?php echo esc_attr( $button_style['border_radius'] ); ?>px;
+                                padding: 12px 24px; font-weight: 600; cursor: default;
+                            "><?php echo esc_html( $button_text ); ?></button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
                     <th><label><?php esc_html_e( 'Allowed Roles', 'document-generator' ); ?></label></th>
                     <td>
                         <fieldset>
@@ -132,12 +207,25 @@ $sources = $fields_handler->get_sources();
                     <td>
                         <select id="dg-target-page" name="target_page" class="regular-text">
                             <option value="0"><?php esc_html_e( '— Auto-detect from current page —', 'document-generator' ); ?></option>
-                            <?php foreach ( $all_pages as $page ) : ?>
-                                <option value="<?php echo esc_attr( $page->ID ); ?>"
-                                        data-post-type="<?php echo esc_attr( $page->post_type ); ?>"
-                                        <?php selected( $target_page, $page->ID ); ?>>
-                                    <?php echo esc_html( $page->post_title ); ?> (<?php echo esc_html( $page->post_type ); ?>)
-                                </option>
+                            <?php
+                            // Group pages by post type.
+                            $grouped = array();
+                            foreach ( $all_pages as $page ) {
+                                $grouped[ $page->post_type ][] = $page;
+                            }
+                            foreach ( $grouped as $pt_name => $pages ) :
+                                $pt_obj = get_post_type_object( $pt_name );
+                                $pt_label = $pt_obj ? $pt_obj->labels->name : $pt_name;
+                            ?>
+                                <optgroup label="<?php echo esc_attr( $pt_label ); ?>">
+                                    <?php foreach ( $pages as $page ) : ?>
+                                        <option value="<?php echo esc_attr( $page->ID ); ?>"
+                                                data-post-type="<?php echo esc_attr( $page->post_type ); ?>"
+                                                <?php selected( $target_page, $page->ID ); ?>>
+                                            <?php echo esc_html( $page->post_title ); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
                             <?php endforeach; ?>
                         </select>
                         <p class="description"><?php esc_html_e( 'Select the page where this shortcode will be placed to identify available context fields.', 'document-generator' ); ?></p>

@@ -67,6 +67,14 @@
                     DG.loadPageContextFields(pageId);
                 }
             });
+
+            // Button style live preview.
+            $('.dg-button-style-grid').on('input change', 'input', function() {
+                DG.updateButtonPreview();
+            });
+            $('#dg-button-text').on('input', function() {
+                $('#dg-btn-preview').text($(this).val() || 'Download Document');
+            });
         },
 
         initDragDrop: function() {
@@ -287,9 +295,16 @@
 
             if (Array.isArray(fields)) {
                 fields.forEach(function(field) {
-                    $select.append(
-                        '<option value="' + field.value + '">' + field.label + '</option>'
-                    );
+                    if (field.disabled) {
+                        // Group header.
+                        $select.append(
+                            '<option value="" disabled style="font-weight:bold;background:#f0f0f1;">' + field.label + '</option>'
+                        );
+                    } else {
+                        $select.append(
+                            '<option value="' + field.value + '">' + field.label + '</option>'
+                        );
+                    }
                 });
             }
         },
@@ -346,6 +361,24 @@
             this.mapping = mapping;
         },
 
+        updateButtonPreview: function() {
+            var $preview = $('#dg-btn-preview');
+            var bgColor = $('input[name="button_style[bg_color]"]').val();
+            var textColor = $('input[name="button_style[text_color]"]').val();
+            var borderColor = $('input[name="button_style[border_color]"]').val();
+            var borderWidth = $('input[name="button_style[border_width]"]').val();
+            var fontSize = $('input[name="button_style[font_size]"]').val();
+            var borderRadius = $('input[name="button_style[border_radius]"]').val();
+
+            $preview.css({
+                'background-color': bgColor,
+                'color': textColor,
+                'border': borderWidth + 'px solid ' + (borderColor || bgColor),
+                'font-size': fontSize + 'px',
+                'border-radius': borderRadius + 'px'
+            });
+        },
+
         saveTemplate: function() {
             var $btn = $('#dg-save-btn');
             var $status = $('#dg-save-status');
@@ -362,7 +395,14 @@
                 mapping: JSON.stringify(this.mapping),
                 allowed_roles: [],
                 button_text: $('#dg-button-text').val(),
-                target_page: $('#dg-target-page').val()
+                target_page: $('#dg-target-page').val(),
+                button_format: $('#dg-button-format').val(),
+                'button_style[bg_color]': $('input[name="button_style[bg_color]"]').val(),
+                'button_style[text_color]': $('input[name="button_style[text_color]"]').val(),
+                'button_style[border_color]': $('input[name="button_style[border_color]"]').val(),
+                'button_style[border_width]': $('input[name="button_style[border_width]"]').val(),
+                'button_style[font_size]': $('input[name="button_style[font_size]"]').val(),
+                'button_style[border_radius]': $('input[name="button_style[border_radius]"]').val()
             };
 
             // Collect checked roles.

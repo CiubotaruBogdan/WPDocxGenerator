@@ -242,7 +242,7 @@ class DG_Fields {
     }
 
     /**
-     * Get Toolset Types custom fields.
+     * Get Toolset Types custom fields, grouped by field group.
      */
     public function get_toolset_fields() {
         $fields = array();
@@ -251,38 +251,129 @@ class DG_Fields {
             return $fields;
         }
 
-        // Toolset stores field groups in option 'wpcf-fields'.
         $toolset_fields = get_option( 'wpcf-fields', array() );
 
+        // Build a mapping: field slug => group name.
+        $field_to_group = $this->get_toolset_field_group_map();
+
+        // Group fields by their group.
+        $grouped = array();
         if ( is_array( $toolset_fields ) ) {
             foreach ( $toolset_fields as $slug => $field_data ) {
-                $label = isset( $field_data['name'] ) ? $field_data['name'] : $slug;
-                $type  = isset( $field_data['type'] ) ? $field_data['type'] : 'text';
+                $group = isset( $field_to_group[ $slug ] ) ? $field_to_group[ $slug ] : __( 'Other Fields', 'document-generator' );
+                $grouped[ $group ][] = array(
+                    'slug'  => $slug,
+                    'data'  => $field_data,
+                );
+            }
+        }
 
+        // Output grouped fields with group headers.
+        foreach ( $grouped as $group_name => $group_fields ) {
+            $fields[] = array(
+                'value'    => '',
+                'label'    => '— ' . $group_name . ' —',
+                'disabled' => true,
+                'group'    => $group_name,
+            );
+            foreach ( $group_fields as $gf ) {
+                $label = isset( $gf['data']['name'] ) ? $gf['data']['name'] : $gf['slug'];
+                $type  = isset( $gf['data']['type'] ) ? $gf['data']['type'] : 'text';
                 $fields[] = array(
-                    'value' => 'toolset_' . $slug,
+                    'value' => 'toolset_' . $gf['slug'],
                     'label' => sprintf( '%s (%s)', $label, $type ),
                     'type'  => $type,
+                    'group' => $group_name,
                 );
             }
         }
 
         // Toolset user fields.
         $toolset_user_fields = get_option( 'wpcf-usermeta', array() );
-        if ( is_array( $toolset_user_fields ) ) {
-            foreach ( $toolset_user_fields as $slug => $field_data ) {
-                $label = isset( $field_data['name'] ) ? $field_data['name'] : $slug;
-                $type  = isset( $field_data['type'] ) ? $field_data['type'] : 'text';
+        if ( is_array( $toolset_user_fields ) && ! empty( $toolset_user_fields ) ) {
+            $user_group_map = $this->get_toolset_user_field_group_map();
+            $user_grouped = array();
 
-                $fields[] = array(
-                    'value' => 'toolset_user_' . $slug,
-                    'label' => sprintf( __( 'User: %s (%s)', 'document-generator' ), $label, $type ),
-                    'type'  => $type,
+            foreach ( $toolset_user_fields as $slug => $field_data ) {
+                $group = isset( $user_group_map[ $slug ] ) ? $user_group_map[ $slug ] : __( 'User Fields', 'document-generator' );
+                $user_grouped[ $group ][] = array(
+                    'slug'  => $slug,
+                    'data'  => $field_data,
                 );
+            }
+
+            foreach ( $user_grouped as $group_name => $group_fields ) {
+                $fields[] = array(
+                    'value'    => '',
+                    'label'    => '— ' . $group_name . ' (User) —',
+                    'disabled' => true,
+                    'group'    => $group_name,
+                );
+                foreach ( $group_fields as $gf ) {
+                    $label = isset( $gf['data']['name'] ) ? $gf['data']['name'] : $gf['slug'];
+                    $type  = isset( $gf['data']['type'] ) ? $gf['data']['type'] : 'text';
+                    $fields[] = array(
+                        'value' => 'toolset_user_' . $gf['slug'],
+                        'label' => sprintf( __( 'User: %s (%s)', 'document-generator' ), $label, $type ),
+                        'type'  => $type,
+                        'group' => $group_name,
+                    );
+                }
             }
         }
 
         return $fields;
+    }
+
+    /**
+     * Get mapping of Toolset field slug => group name for post fields.
+     */
+    private function get_toolset_field_group_map() {
+        $map = array();
+
+        $groups = get_posts( array(
+            'post_type'      => 'wp-types-group',
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+        ) );
+
+        foreach ( $groups as $group ) {
+            $group_fields = get_post_meta( $group->ID, '_wp_types_group_fields', true );
+            if ( ! empty( $group_fields ) ) {
+                // Stored as comma-separated list of field slugs.
+                $slugs = array_filter( array_map( 'trim', explode( ',', $group_fields ) ) );
+                foreach ( $slugs as $slug ) {
+                    $map[ $slug ] = $group->post_title;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Get mapping of Toolset field slug => group name for user fields.
+     */
+    private function get_toolset_user_field_group_map() {
+        $map = array();
+
+        $groups = get_posts( array(
+            'post_type'      => 'wp-types-user-group',
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+        ) );
+
+        foreach ( $groups as $group ) {
+            $group_fields = get_post_meta( $group->ID, '_wp_types_group_fields', true );
+            if ( ! empty( $group_fields ) ) {
+                $slugs = array_filter( array_map( 'trim', explode( ',', $group_fields ) ) );
+                foreach ( $slugs as $slug ) {
+                    $map[ $slug ] = $group->post_title;
+                }
+            }
+        }
+
+        return $map;
     }
 
     /**

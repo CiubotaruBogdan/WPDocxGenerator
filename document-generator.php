@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Document Generator
+ * Plugin Name: WPDocxGen
  * Plugin URI: https://ciubotarubogdan.work
  * Description: Generate documents from DOCX templates with dynamic field mapping. Supports WordPress user fields, site fields, and Toolset Types custom fields.
  * Version: 1.0
