@@ -47,7 +47,7 @@ class DG_Generator {
             $source = $config['source'] ?? '';
 
             // Check if this is a repeat block mapping.
-            if ( $source === 'toolset_repeating' || ( isset( $config['is_repeat'] ) && $config['is_repeat'] ) ) {
+            if ( $source === 'toolset_repeating' || $source === 'wp_users' || ( isset( $config['is_repeat'] ) && $config['is_repeat'] ) ) {
                 $block_name = $placeholder;
                 $repeat_data[ $block_name ] = $this->fields_handler->resolve_repeat_data(
                     $config,

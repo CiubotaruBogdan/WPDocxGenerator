@@ -550,7 +550,50 @@ class DG_Fields {
             return $this->resolve_cpt_children( $source, $post_id, $repeat_config );
         }
 
+        // WordPress users.
+        if ( $source === 'wp_users' ) {
+            return $this->resolve_wp_users( $field );
+        }
+
         return array();
+    }
+
+    /**
+     * Resolve WordPress users as repeat rows for table blocks.
+     *
+     * @param string $field Role filter (empty = all users).
+     * @return array Array of rows with user data.
+     */
+    private function resolve_wp_users( $role = '' ) {
+        $args = array(
+            'orderby' => 'display_name',
+            'order'   => 'ASC',
+            'number'  => 100,
+        );
+        if ( ! empty( $role ) ) {
+            $args['role'] = $role;
+        }
+
+        $users = get_users( $args );
+        $rows  = array();
+        $index = 1;
+
+        foreach ( $users as $user ) {
+            $rows[] = array(
+                'index'          => $index,
+                'display_name'   => $user->display_name,
+                'user_email'     => $user->user_email,
+                'user_login'     => $user->user_login,
+                'user_firstname' => $user->first_name,
+                'user_lastname'  => $user->last_name,
+                'user_role'      => implode( ', ', $user->roles ),
+                'user_registered' => date_i18n( get_option( 'date_format' ), strtotime( $user->user_registered ) ),
+                'user_url'       => $user->user_url,
+            );
+            $index++;
+        }
+
+        return $rows;
     }
 
     // --- Private resolvers ---

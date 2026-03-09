@@ -17,6 +17,7 @@ class DG_Admin {
         add_action( 'wp_ajax_dg_save_mapping', array( $this, 'ajax_save_mapping' ) );
         add_action( 'wp_ajax_dg_delete_template', array( $this, 'ajax_delete_template' ) );
         add_action( 'wp_ajax_dg_get_fields', array( $this, 'ajax_get_fields' ) );
+        add_action( 'wp_ajax_dg_download_demo', array( $this, 'ajax_download_demo' ) );
     }
 
     public function add_menu_pages() {
@@ -46,6 +47,15 @@ class DG_Admin {
             'manage_options',
             'document-generator-new',
             array( $this, 'render_edit_page' )
+        );
+
+        add_submenu_page(
+            'document-generator',
+            __( 'Tutorial', 'document-generator' ),
+            __( 'Tutorial', 'document-generator' ),
+            'manage_options',
+            'document-generator-tutorial',
+            array( $this, 'render_tutorial_page' )
         );
 
         // Hidden page for editing existing templates.
@@ -104,6 +114,42 @@ class DG_Admin {
     public function render_edit_page() {
         $template_id = isset( $_GET['template_id'] ) ? absint( $_GET['template_id'] ) : 0;
         include DG_PLUGIN_DIR . 'admin/views/edit.php';
+    }
+
+    public function render_tutorial_page() {
+        include DG_PLUGIN_DIR . 'admin/views/tutorial.php';
+    }
+
+    /**
+     * AJAX: Download a demo template file.
+     */
+    public function ajax_download_demo() {
+        check_ajax_referer( 'dg_admin_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'Permission denied.', 'document-generator' ) );
+        }
+
+        $type = isset( $_GET['type'] ) ? sanitize_text_field( $_GET['type'] ) : '';
+        if ( ! in_array( $type, array( 'simple', 'table' ), true ) ) {
+            wp_die( __( 'Invalid demo type.', 'document-generator' ) );
+        }
+
+        $path = DG_Demo::get_demo_path( $type );
+
+        if ( ! file_exists( $path ) ) {
+            wp_die( __( 'Demo file could not be created.', 'document-generator' ) );
+        }
+
+        $filename = 'demo-' . $type . '.docx';
+
+        header( 'Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Content-Length: ' . filesize( $path ) );
+        header( 'Cache-Control: no-cache, no-store, must-revalidate' );
+
+        readfile( $path );
+        exit;
     }
 
     /**

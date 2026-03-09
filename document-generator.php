@@ -71,6 +71,7 @@ final class Document_Generator {
         require_once DG_PLUGIN_DIR . 'includes/class-dg-fields.php';
         require_once DG_PLUGIN_DIR . 'includes/class-dg-generator.php';
         require_once DG_PLUGIN_DIR . 'includes/class-dg-shortcode.php';
+        require_once DG_PLUGIN_DIR . 'includes/class-dg-demo.php';
     }
 
     private function init_hooks() {

@@ -60,6 +60,26 @@
                 DG.copyToClipboard($(this).text());
             });
 
+            // Repeat block source change.
+            $(document).on('change', '.dg-repeat-source', function() {
+                var $block = $(this).closest('.dg-repeat-block');
+                var $field = $block.find('.dg-repeat-field');
+                var source = $(this).val();
+
+                if (source === 'wp_users') {
+                    $field.html(
+                        '<option value="">' + '— All users —' + '</option>' +
+                        '<option value="administrator">Administrator</option>' +
+                        '<option value="editor">Editor</option>' +
+                        '<option value="author">Author</option>' +
+                        '<option value="contributor">Contributor</option>' +
+                        '<option value="subscriber">Subscriber</option>'
+                    );
+                } else {
+                    $field.html('<option value="">— Select field —</option>');
+                }
+            });
+
             // Button style live preview.
             $('.dg-button-style-grid').on('input change', 'input', function() {
                 DG.updateButtonPreview();
@@ -193,6 +213,7 @@
                         '<select class="dg-repeat-source" data-block="' + block + '">' +
                         '<option value="">— Select data source —</option>' +
                         '<option value="toolset_repeating">Toolset Repeating Fields</option>' +
+                        '<option value="wp_users">WordPress Users</option>' +
                         '</select>' +
                         '<select class="dg-repeat-field" data-block="' + block + '">' +
                         '<option value="">— Select field —</option>' +
