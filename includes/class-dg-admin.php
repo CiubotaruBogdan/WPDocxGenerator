@@ -60,13 +60,10 @@ class DG_Admin {
     }
 
     public function enqueue_assets( $hook ) {
-        $screens = array(
-            'toplevel_page_document-generator',
-            'doc-generator_page_document-generator-new',
-            'admin_page_document-generator-edit',
-        );
-
-        if ( ! in_array( $hook, $screens, true ) ) {
+        // Check if we're on a plugin page by query param (more reliable than hook names
+        // which depend on the sanitized menu title).
+        $page = isset( $_GET['page'] ) ? $_GET['page'] : '';
+        if ( strpos( $page, 'document-generator' ) !== 0 ) {
             return;
         }
 
