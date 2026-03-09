@@ -13,12 +13,9 @@
         },
 
         bindEvents: function() {
-            // File upload — clicking anywhere in the upload prompt area triggers file browse.
-            $('.dg-upload-prompt').on('click', function(e) {
-                if (!$(e.target).is('#dg-file-input')) {
-                    e.stopPropagation();
-                    $('#dg-file-input').trigger('click');
-                }
+            // File upload.
+            $('#dg-browse-btn').on('click', function() {
+                $('#dg-file-input').trigger('click');
             });
             $('#dg-change-file').on('click', function() {
                 $('.dg-current-file').hide();
