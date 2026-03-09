@@ -126,67 +126,6 @@ $sources = $fields_handler->get_sources();
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="dg-button-text"><?php esc_html_e( 'Button Text', 'document-generator' ); ?></label></th>
-                    <td>
-                        <input type="text" id="dg-button-text" name="button_text" class="regular-text"
-                               value="<?php echo esc_attr( $button_text ); ?>"
-                               placeholder="<?php esc_attr_e( 'Download Document', 'document-generator' ); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th><label for="dg-button-format"><?php esc_html_e( 'Download Format', 'document-generator' ); ?></label></th>
-                    <td>
-                        <select id="dg-button-format" name="button_format">
-                            <option value="both" <?php selected( $button_format, 'both' ); ?>><?php esc_html_e( 'Both (DOCX + PDF)', 'document-generator' ); ?></option>
-                            <option value="docx" <?php selected( $button_format, 'docx' ); ?>><?php esc_html_e( 'DOCX only', 'document-generator' ); ?></option>
-                            <option value="pdf" <?php selected( $button_format, 'pdf' ); ?>><?php esc_html_e( 'PDF only', 'document-generator' ); ?></option>
-                        </select>
-                        <p class="description"><?php esc_html_e( 'Choose which download formats to show on the frontend.', 'document-generator' ); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th><?php esc_html_e( 'Button Style', 'document-generator' ); ?></th>
-                    <td>
-                        <div class="dg-button-style-grid">
-                            <label>
-                                <?php esc_html_e( 'Background Color', 'document-generator' ); ?>
-                                <input type="color" name="button_style[bg_color]" value="<?php echo esc_attr( $button_style['bg_color'] ); ?>">
-                            </label>
-                            <label>
-                                <?php esc_html_e( 'Text Color', 'document-generator' ); ?>
-                                <input type="color" name="button_style[text_color]" value="<?php echo esc_attr( $button_style['text_color'] ); ?>">
-                            </label>
-                            <label>
-                                <?php esc_html_e( 'Border Color', 'document-generator' ); ?>
-                                <input type="color" name="button_style[border_color]" value="<?php echo esc_attr( $button_style['border_color'] ?: '#2b579a' ); ?>">
-                            </label>
-                            <label>
-                                <?php esc_html_e( 'Border Width (px)', 'document-generator' ); ?>
-                                <input type="number" name="button_style[border_width]" value="<?php echo esc_attr( $button_style['border_width'] ); ?>" min="0" max="10" step="1" style="width:70px;">
-                            </label>
-                            <label>
-                                <?php esc_html_e( 'Font Size (px)', 'document-generator' ); ?>
-                                <input type="number" name="button_style[font_size]" value="<?php echo esc_attr( $button_style['font_size'] ); ?>" min="10" max="30" step="1" style="width:70px;">
-                            </label>
-                            <label>
-                                <?php esc_html_e( 'Border Radius (px)', 'document-generator' ); ?>
-                                <input type="number" name="button_style[border_radius]" value="<?php echo esc_attr( $button_style['border_radius'] ); ?>" min="0" max="50" step="1" style="width:70px;">
-                            </label>
-                        </div>
-                        <div class="dg-button-preview" style="margin-top:15px;">
-                            <p><strong><?php esc_html_e( 'Preview:', 'document-generator' ); ?></strong></p>
-                            <button type="button" id="dg-btn-preview" class="dg-download-btn" style="
-                                background-color: <?php echo esc_attr( $button_style['bg_color'] ); ?>;
-                                color: <?php echo esc_attr( $button_style['text_color'] ); ?>;
-                                border: <?php echo esc_attr( $button_style['border_width'] ); ?>px solid <?php echo esc_attr( $button_style['border_color'] ?: $button_style['bg_color'] ); ?>;
-                                font-size: <?php echo esc_attr( $button_style['font_size'] ); ?>px;
-                                border-radius: <?php echo esc_attr( $button_style['border_radius'] ); ?>px;
-                                padding: 12px 24px; font-weight: 600; cursor: default;
-                            "><?php echo esc_html( $button_text ); ?></button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
                     <th><label><?php esc_html_e( 'Allowed Roles', 'document-generator' ); ?></label></th>
                     <td>
                         <fieldset>
@@ -297,9 +236,10 @@ $sources = $fields_handler->get_sources();
             </div>
         </div>
 
-        <!-- Step 3: Shortcode Output -->
+        <!-- Step 3: Shortcode & Button -->
         <div class="dg-section" id="dg-shortcode-section" <?php echo ! $is_edit ? 'style="display:none;"' : ''; ?>>
-            <h2><?php esc_html_e( 'Shortcode', 'document-generator' ); ?></h2>
+            <h2><?php esc_html_e( 'Shortcode & Button', 'document-generator' ); ?></h2>
+
             <div class="dg-shortcode-output">
                 <code id="dg-shortcode-code"><?php
                     echo $is_edit
@@ -312,8 +252,74 @@ $sources = $fields_handler->get_sources();
             </div>
             <p class="description"><?php esc_html_e( 'Paste this shortcode into any page or post to display the download button.', 'document-generator' ); ?></p>
             <p class="description">
-                <?php esc_html_e( 'Options: format="docx" or format="pdf" to force a specific format. class="my-class" for custom styling.', 'document-generator' ); ?>
+                <?php esc_html_e( 'Options: format="docx" or format="pdf" to override format. class="my-class" for custom CSS class.', 'document-generator' ); ?>
             </p>
+
+            <hr style="margin: 20px 0;">
+
+            <table class="form-table" style="margin-top:0;">
+                <tr>
+                    <th><label for="dg-button-text"><?php esc_html_e( 'Button Text', 'document-generator' ); ?></label></th>
+                    <td>
+                        <input type="text" id="dg-button-text" name="button_text" class="regular-text"
+                               value="<?php echo esc_attr( $button_text ); ?>"
+                               placeholder="<?php esc_attr_e( 'Download Document', 'document-generator' ); ?>">
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="dg-button-format"><?php esc_html_e( 'Download Format', 'document-generator' ); ?></label></th>
+                    <td>
+                        <select id="dg-button-format" name="button_format">
+                            <option value="both" <?php selected( $button_format, 'both' ); ?>><?php esc_html_e( 'Both (DOCX + PDF)', 'document-generator' ); ?></option>
+                            <option value="docx" <?php selected( $button_format, 'docx' ); ?>><?php esc_html_e( 'DOCX only', 'document-generator' ); ?></option>
+                            <option value="pdf" <?php selected( $button_format, 'pdf' ); ?>><?php esc_html_e( 'PDF only', 'document-generator' ); ?></option>
+                        </select>
+                        <p class="description"><?php esc_html_e( 'Choose which download formats to show on the frontend.', 'document-generator' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Button Style', 'document-generator' ); ?></th>
+                    <td>
+                        <div class="dg-button-style-grid">
+                            <label>
+                                <?php esc_html_e( 'Background Color', 'document-generator' ); ?>
+                                <input type="color" name="button_style[bg_color]" value="<?php echo esc_attr( $button_style['bg_color'] ); ?>">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Text Color', 'document-generator' ); ?>
+                                <input type="color" name="button_style[text_color]" value="<?php echo esc_attr( $button_style['text_color'] ); ?>">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Border Color', 'document-generator' ); ?>
+                                <input type="color" name="button_style[border_color]" value="<?php echo esc_attr( $button_style['border_color'] ?: '#2b579a' ); ?>">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Border Width (px)', 'document-generator' ); ?>
+                                <input type="number" name="button_style[border_width]" value="<?php echo esc_attr( $button_style['border_width'] ); ?>" min="0" max="10" step="1" style="width:70px;">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Font Size (px)', 'document-generator' ); ?>
+                                <input type="number" name="button_style[font_size]" value="<?php echo esc_attr( $button_style['font_size'] ); ?>" min="10" max="30" step="1" style="width:70px;">
+                            </label>
+                            <label>
+                                <?php esc_html_e( 'Border Radius (px)', 'document-generator' ); ?>
+                                <input type="number" name="button_style[border_radius]" value="<?php echo esc_attr( $button_style['border_radius'] ); ?>" min="0" max="50" step="1" style="width:70px;">
+                            </label>
+                        </div>
+                        <div class="dg-button-preview" style="margin-top:15px;">
+                            <p><strong><?php esc_html_e( 'Preview:', 'document-generator' ); ?></strong></p>
+                            <button type="button" id="dg-btn-preview" class="dg-download-btn" style="
+                                background-color: <?php echo esc_attr( $button_style['bg_color'] ); ?>;
+                                color: <?php echo esc_attr( $button_style['text_color'] ); ?>;
+                                border: <?php echo esc_attr( $button_style['border_width'] ); ?>px solid <?php echo esc_attr( $button_style['border_color'] ?: $button_style['bg_color'] ); ?>;
+                                font-size: <?php echo esc_attr( $button_style['font_size'] ); ?>px;
+                                border-radius: <?php echo esc_attr( $button_style['border_radius'] ); ?>px;
+                                padding: 12px 24px; font-weight: 600; cursor: default;
+                            "><?php echo esc_html( $button_text ); ?></button>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <!-- Submit -->
