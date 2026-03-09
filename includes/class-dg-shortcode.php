@@ -221,16 +221,6 @@ class DG_Shortcode {
             $format = 'docx';
         }
 
-        // Use target page as fallback if no post_id detected from the frontend.
-        // The frontend auto-detects the current post from body classes.
-        // Target page provides context when the shortcode is on a page without a detectable post ID.
-        if ( ! $post_id ) {
-            $target_page = get_post_meta( $template_id, '_dg_target_page', true );
-            if ( $target_page ) {
-                $post_id = absint( $target_page );
-            }
-        }
-
         $generator = new DG_Generator();
         $file_path = $generator->generate( $template_id, $format, $post_id );
 

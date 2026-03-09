@@ -17,7 +17,6 @@ class DG_Admin {
         add_action( 'wp_ajax_dg_save_mapping', array( $this, 'ajax_save_mapping' ) );
         add_action( 'wp_ajax_dg_delete_template', array( $this, 'ajax_delete_template' ) );
         add_action( 'wp_ajax_dg_get_fields', array( $this, 'ajax_get_fields' ) );
-        add_action( 'wp_ajax_dg_get_page_context_fields', array( $this, 'ajax_get_page_context_fields' ) );
     }
 
     public function add_menu_pages() {
@@ -177,7 +176,6 @@ class DG_Admin {
         $mapping_raw   = isset( $_POST['mapping'] ) ? wp_unslash( $_POST['mapping'] ) : '{}';
         $allowed_roles = isset( $_POST['allowed_roles'] ) ? array_map( 'sanitize_text_field', (array) $_POST['allowed_roles'] ) : array();
         $button_text   = isset( $_POST['button_text'] ) ? sanitize_text_field( wp_unslash( $_POST['button_text'] ) ) : __( 'Download Document', 'document-generator' );
-        $target_page   = isset( $_POST['target_page'] ) ? absint( $_POST['target_page'] ) : 0;
         $button_format = isset( $_POST['button_format'] ) ? sanitize_text_field( $_POST['button_format'] ) : 'both';
         $button_style  = array();
         if ( isset( $_POST['button_style'] ) && is_array( $_POST['button_style'] ) ) {
@@ -241,7 +239,6 @@ class DG_Admin {
         update_post_meta( $post_id, '_dg_mapping', $clean_mapping );
         update_post_meta( $post_id, '_dg_allowed_roles', $allowed_roles );
         update_post_meta( $post_id, '_dg_button_text', $button_text );
-        update_post_meta( $post_id, '_dg_target_page', $target_page );
         update_post_meta( $post_id, '_dg_button_format', $button_format );
         if ( ! empty( $button_style ) ) {
             update_post_meta( $post_id, '_dg_button_style', $button_style );
@@ -301,18 +298,4 @@ class DG_Admin {
     /**
      * AJAX: Get fields available in the context of a specific page.
      */
-    public function ajax_get_page_context_fields() {
-        check_ajax_referer( 'dg_admin_nonce', 'nonce' );
-
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( __( 'Permission denied.', 'document-generator' ) );
-        }
-
-        $page_id = isset( $_POST['page_id'] ) ? absint( $_POST['page_id'] ) : 0;
-
-        $fields_handler = new DG_Fields();
-        $fields = $fields_handler->get_context_fields( $page_id );
-
-        wp_send_json_success( $fields );
-    }
 }

@@ -13,9 +13,11 @@
         },
 
         bindEvents: function() {
-            // File upload.
-            $('#dg-browse-btn').on('click', function() {
-                $('#dg-file-input').trigger('click');
+            // File upload — clicking anywhere in the upload prompt area triggers file browse.
+            $('#dg-browse-btn, .dg-upload-prompt').on('click', function(e) {
+                if (e.target.id !== 'dg-file-input') {
+                    $('#dg-file-input').trigger('click');
+                }
             });
             $('#dg-change-file').on('click', function() {
                 $('.dg-current-file').hide();
@@ -58,14 +60,6 @@
             });
             $(document).on('click', '.dg-shortcode-display', function() {
                 DG.copyToClipboard($(this).text());
-            });
-
-            // Target page change.
-            $('#dg-target-page').on('change', function() {
-                var pageId = $(this).val();
-                if (pageId) {
-                    DG.loadPageContextFields(pageId);
-                }
             });
 
             // Button style live preview.
@@ -309,21 +303,6 @@
             }
         },
 
-        loadPageContextFields: function(pageId) {
-            $.post(dgAdmin.ajaxUrl, {
-                action: 'dg_get_page_context_fields',
-                nonce: dgAdmin.nonce,
-                page_id: pageId
-            }, function(response) {
-                if (response.success && response.data.fields) {
-                    // Pre-cache the fields by source.
-                    Object.keys(response.data.fields).forEach(function(source) {
-                        DG.fieldsCache[source] = response.data.fields[source];
-                    });
-                }
-            });
-        },
-
         updateMappingFromUI: function() {
             var mapping = {};
 
@@ -395,7 +374,6 @@
                 mapping: JSON.stringify(this.mapping),
                 allowed_roles: [],
                 button_text: $('#dg-button-text').val(),
-                target_page: $('#dg-target-page').val(),
                 button_format: $('#dg-button-format').val(),
                 'button_style[bg_color]': $('input[name="button_style[bg_color]"]').val(),
                 'button_style[text_color]': $('input[name="button_style[text_color]"]').val(),

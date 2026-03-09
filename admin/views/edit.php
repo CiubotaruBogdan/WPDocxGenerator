@@ -10,7 +10,6 @@ $filename      = '';
 $mapping       = array();
 $allowed_roles = array();
 $button_text   = __( 'Download Document', 'document-generator' );
-$target_page   = 0;
 $button_format = 'both';
 $button_style  = array(
     'bg_color'     => '#2b579a',
@@ -29,7 +28,6 @@ if ( $is_edit ) {
         $mapping       = get_post_meta( $template_id, '_dg_mapping', true );
         $allowed_roles = get_post_meta( $template_id, '_dg_allowed_roles', true );
         $button_text   = get_post_meta( $template_id, '_dg_button_text', true );
-        $target_page   = get_post_meta( $template_id, '_dg_target_page', true );
         $button_format = get_post_meta( $template_id, '_dg_button_format', true );
         $saved_style   = get_post_meta( $template_id, '_dg_button_style', true );
         if ( is_array( $saved_style ) ) {
@@ -52,20 +50,6 @@ if ( $is_edit ) {
 
 // Get all WP roles.
 $wp_roles = wp_roles()->get_names();
-
-// Get all pages for target page selector, including custom post types.
-$target_post_types = array( 'page', 'post' );
-$custom_post_types = get_post_types( array( 'public' => true, '_builtin' => false ), 'objects' );
-foreach ( $custom_post_types as $cpt ) {
-    $target_post_types[] = $cpt->name;
-}
-$all_pages = get_posts( array(
-    'post_type'      => $target_post_types,
-    'post_status'    => 'publish',
-    'posts_per_page' => -1,
-    'orderby'        => 'title',
-    'order'          => 'ASC',
-) );
 
 // Get field sources.
 $fields_handler = new DG_Fields();
@@ -139,35 +123,6 @@ $sources = $fields_handler->get_sources();
                             <?php endforeach; ?>
                             <p class="description"><?php esc_html_e( 'Leave unchecked to allow all logged-in users.', 'document-generator' ); ?></p>
                         </fieldset>
-                    </td>
-                </tr>
-                <tr>
-                    <th><label for="dg-target-page"><?php esc_html_e( 'Target Page (Context)', 'document-generator' ); ?></label></th>
-                    <td>
-                        <select id="dg-target-page" name="target_page" class="regular-text">
-                            <option value="0"><?php esc_html_e( '— Auto-detect from current page —', 'document-generator' ); ?></option>
-                            <?php
-                            // Group pages by post type.
-                            $grouped = array();
-                            foreach ( $all_pages as $page ) {
-                                $grouped[ $page->post_type ][] = $page;
-                            }
-                            foreach ( $grouped as $pt_name => $pages ) :
-                                $pt_obj = get_post_type_object( $pt_name );
-                                $pt_label = $pt_obj ? $pt_obj->labels->name : $pt_name;
-                            ?>
-                                <optgroup label="<?php echo esc_attr( $pt_label ); ?>">
-                                    <?php foreach ( $pages as $page ) : ?>
-                                        <option value="<?php echo esc_attr( $page->ID ); ?>"
-                                                data-post-type="<?php echo esc_attr( $page->post_type ); ?>"
-                                                <?php selected( $target_page, $page->ID ); ?>>
-                                            <?php echo esc_html( $page->post_title ); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                            <?php endforeach; ?>
-                        </select>
-                        <p class="description"><?php esc_html_e( 'Select the page where this shortcode will be placed to identify available context fields.', 'document-generator' ); ?></p>
                     </td>
                 </tr>
             </table>
