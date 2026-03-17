@@ -50,15 +50,6 @@
     background: #1e3f6f;
 }
 
-.dg-btn-pdf {
-    background: #d32f2f;
-    color: #fff;
-}
-
-.dg-btn-pdf:hover {
-    background: #b71c1c;
-}
-
 /* Icons */
 .dg-icon {
     display: inline-block;
@@ -69,19 +60,6 @@
 
 .dg-icon-docx::before {
     content: 'W';
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.dg-icon-pdf::before {
-    content: 'P';
     display: flex;
     align-items: center;
     justify-content: center;

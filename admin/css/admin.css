@@ -137,10 +137,6 @@
     width: 250px;
 }
 
-.dg-mapping-list .column-preview {
-    width: 100px;
-}
-
 .dg-mapping-list select,
 .dg-mapping-list input[type="text"] {
     width: 100%;
@@ -153,11 +149,6 @@
     border-radius: 3px;
     font-size: 12px;
     color: #1d2327;
-}
-
-.dg-preview-value {
-    color: #646970;
-    font-size: 12px;
 }
 
 /* Repeat blocks */
@@ -303,10 +294,6 @@
 
 /* Responsive */
 @media screen and (max-width: 782px) {
-    .dg-mapping-list .column-preview {
-        display: none;
-    }
-
     .dg-shortcode-output {
         flex-direction: column;
     }

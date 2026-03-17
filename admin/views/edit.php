@@ -10,7 +10,6 @@ $filename      = '';
 $mapping       = array();
 $allowed_roles = array();
 $button_text   = __( 'Download Document', 'document-generator' );
-$button_format = 'both';
 $button_style  = array(
     'bg_color'     => '#2b579a',
     'text_color'   => '#ffffff',
@@ -28,7 +27,6 @@ if ( $is_edit ) {
         $mapping       = get_post_meta( $template_id, '_dg_mapping', true );
         $allowed_roles = get_post_meta( $template_id, '_dg_allowed_roles', true );
         $button_text   = get_post_meta( $template_id, '_dg_button_text', true );
-        $button_format = get_post_meta( $template_id, '_dg_button_format', true );
         $saved_style   = get_post_meta( $template_id, '_dg_button_style', true );
         if ( is_array( $saved_style ) ) {
             $button_style = wp_parse_args( $saved_style, $button_style );
@@ -42,9 +40,6 @@ if ( $is_edit ) {
     }
     if ( empty( $button_text ) ) {
         $button_text = __( 'Download Document', 'document-generator' );
-    }
-    if ( empty( $button_format ) ) {
-        $button_format = 'both';
     }
 }
 
@@ -140,8 +135,6 @@ $sources = $fields_handler->get_sources();
                             <th class="column-placeholder"><?php esc_html_e( 'Placeholder', 'document-generator' ); ?></th>
                             <th class="column-source"><?php esc_html_e( 'Field Source', 'document-generator' ); ?></th>
                             <th class="column-field"><?php esc_html_e( 'Field', 'document-generator' ); ?></th>
-                            <th class="column-meta"><?php esc_html_e( 'Extra / Custom Value', 'document-generator' ); ?></th>
-                            <th class="column-preview"><?php esc_html_e( 'Preview', 'document-generator' ); ?></th>
                         </tr>
                     </thead>
                     <tbody id="dg-mapping-body">
@@ -166,15 +159,6 @@ $sources = $fields_handler->get_sources();
                                         <select class="dg-field-select" data-placeholder="<?php echo esc_attr( $placeholder ); ?>">
                                             <option value=""><?php esc_html_e( '— Select field —', 'document-generator' ); ?></option>
                                         </select>
-                                    </td>
-                                    <td class="column-meta">
-                                        <input type="text" class="dg-meta-input regular-text"
-                                               data-placeholder="<?php echo esc_attr( $placeholder ); ?>"
-                                               value="<?php echo esc_attr( $config['meta'] ?? '' ); ?>"
-                                               placeholder="<?php esc_attr_e( 'Custom value or format', 'document-generator' ); ?>">
-                                    </td>
-                                    <td class="column-preview">
-                                        <span class="dg-preview-value">—</span>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -207,7 +191,7 @@ $sources = $fields_handler->get_sources();
             </div>
             <p class="description"><?php esc_html_e( 'Paste this shortcode into any page or post to display the download button.', 'document-generator' ); ?></p>
             <p class="description">
-                <?php esc_html_e( 'Options: format="docx" or format="pdf" to override format. class="my-class" for custom CSS class.', 'document-generator' ); ?>
+                <?php esc_html_e( 'Options: class="my-class" for custom CSS class.', 'document-generator' ); ?>
             </p>
 
             <hr style="margin: 20px 0;">
@@ -219,17 +203,6 @@ $sources = $fields_handler->get_sources();
                         <input type="text" id="dg-button-text" name="button_text" class="regular-text"
                                value="<?php echo esc_attr( $button_text ); ?>"
                                placeholder="<?php esc_attr_e( 'Download Document', 'document-generator' ); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th><label for="dg-button-format"><?php esc_html_e( 'Download Format', 'document-generator' ); ?></label></th>
-                    <td>
-                        <select id="dg-button-format" name="button_format">
-                            <option value="both" <?php selected( $button_format, 'both' ); ?>><?php esc_html_e( 'Both (DOCX + PDF)', 'document-generator' ); ?></option>
-                            <option value="docx" <?php selected( $button_format, 'docx' ); ?>><?php esc_html_e( 'DOCX only', 'document-generator' ); ?></option>
-                            <option value="pdf" <?php selected( $button_format, 'pdf' ); ?>><?php esc_html_e( 'PDF only', 'document-generator' ); ?></option>
-                        </select>
-                        <p class="description"><?php esc_html_e( 'Choose which download formats to show on the frontend.', 'document-generator' ); ?></p>
                     </td>
                 </tr>
                 <tr>
@@ -309,14 +282,6 @@ $sources = $fields_handler->get_sources();
             <select class="dg-field-select" data-placeholder="{{data.placeholder}}">
                 <option value=""><?php esc_html_e( '— Select field —', 'document-generator' ); ?></option>
             </select>
-        </td>
-        <td class="column-meta">
-            <input type="text" class="dg-meta-input regular-text"
-                   data-placeholder="{{data.placeholder}}"
-                   placeholder="<?php esc_attr_e( 'Custom value or format', 'document-generator' ); ?>">
-        </td>
-        <td class="column-preview">
-            <span class="dg-preview-value">—</span>
         </td>
     </tr>
 </script>
