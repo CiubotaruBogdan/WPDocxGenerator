@@ -301,6 +301,8 @@ class DG_Template {
             // Replace simple placeholders.
             foreach ( $replacements as $placeholder => $value ) {
                 $value = $this->escape_xml( $value );
+                // Convert newlines to DOCX line breaks so multiline fields render correctly.
+                $value = $this->convert_newlines_to_breaks( $value, $xml, $placeholder );
                 $xml   = str_replace( '#' . $placeholder . '#', $value, $xml );
             }
 
@@ -356,6 +358,7 @@ class DG_Template {
                     $new_row_xml = $row_xml;
                     foreach ( $row_data as $placeholder => $value ) {
                         $value = $this->escape_xml( $value );
+                        $value = $this->convert_newlines_to_breaks( $value, $new_row_xml, $placeholder );
                         $new_row_xml = str_replace( '#' . $placeholder . '#', $value, $new_row_xml );
                     }
 
@@ -377,5 +380,26 @@ class DG_Template {
      */
     private function escape_xml( $value ) {
         return htmlspecialchars( (string) $value, ENT_XML1 | ENT_QUOTES, 'UTF-8' );
+    }
+
+    /**
+     * Convert newlines in a value to DOCX line breaks (<w:br/>).
+     *
+     * Inside DOCX XML, placeholders sit within <w:r><w:t> elements.
+     * We close the current <w:t>, insert a <w:br/>, and reopen <w:t>.
+     *
+     * @param string $value       The escaped value (may contain newlines).
+     * @param string $xml         The full XML content (unused, kept for signature).
+     * @param string $placeholder The placeholder name (unused, kept for signature).
+     * @return string The value with newlines converted to DOCX line breaks.
+     */
+    private function convert_newlines_to_breaks( $value, &$xml, $placeholder ) {
+        $value = str_replace( array( "\r\n", "\r" ), "\n", $value );
+
+        if ( strpos( $value, "\n" ) === false ) {
+            return $value;
+        }
+
+        return implode( '</w:t><w:br/><w:t xml:space="preserve">', explode( "\n", $value ) );
     }
 }
