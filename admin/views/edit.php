@@ -156,9 +156,13 @@ $sources = $fields_handler->get_sources();
                                         </select>
                                     </td>
                                     <td class="column-field">
-                                        <select class="dg-field-select" data-placeholder="<?php echo esc_attr( $placeholder ); ?>">
-                                            <option value=""><?php esc_html_e( '— Select field —', 'document-generator' ); ?></option>
-                                        </select>
+                                        <?php if ( ( $config['source'] ?? '' ) === 'custom' ) : ?>
+                                            <input type="text" class="dg-custom-text-input regular-text" data-placeholder="<?php echo esc_attr( $placeholder ); ?>" placeholder="<?php esc_attr_e( 'Enter custom text...', 'document-generator' ); ?>" value="<?php echo esc_attr( $config['meta'] ?? '' ); ?>">
+                                        <?php else : ?>
+                                            <select class="dg-field-select" data-placeholder="<?php echo esc_attr( $placeholder ); ?>">
+                                                <option value=""><?php esc_html_e( '— Select field —', 'document-generator' ); ?></option>
+                                            </select>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

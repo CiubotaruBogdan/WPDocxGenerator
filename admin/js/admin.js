@@ -38,6 +38,11 @@
                 DG.updateMappingFromUI();
             });
 
+            // Custom text input - update mapping on input.
+            $(document).on('input', '.dg-custom-text-input', function() {
+                DG.updateMappingFromUI();
+            });
+
             // Save.
             $('#dg-template-form').on('submit', function(e) {
                 e.preventDefault();
@@ -190,11 +195,33 @@
                 return;
             }
 
+            // Preserve current mapping before rebuilding the table.
+            if ($('#dg-mapping-body .dg-mapping-row').length > 0) {
+                DG.updateMappingFromUI();
+            }
+
             $body.empty();
+
+            // Track which placeholders are new vs. preserved.
+            var previousMapping = DG.mapping || {};
+            var newPlaceholders = [];
+            var keptPlaceholders = [];
 
             placeholders.forEach(function(p) {
                 var html = template.replace(/\{\{data\.placeholder\}\}/g, p);
                 $body.append(html);
+
+                if (previousMapping[p] && previousMapping[p].source) {
+                    keptPlaceholders.push(p);
+                } else {
+                    newPlaceholders.push(p);
+                }
+            });
+
+            // Highlight new placeholders so user can spot them easily.
+            newPlaceholders.forEach(function(p) {
+                var $row = $('[data-placeholder="' + p + '"]').closest('.dg-mapping-row');
+                $row.addClass('dg-new-placeholder');
             });
 
             // Repeat blocks.
@@ -222,8 +249,13 @@
 
             $('#dg-mapping-section').show();
 
-            // If we have existing mapping data, apply it.
+            // Re-apply preserved mapping data.
             DG.applyExistingMapping();
+
+            // Show a notice if there were changes.
+            if (Object.keys(previousMapping).length > 0 && (newPlaceholders.length > 0 || keptPlaceholders.length < Object.keys(previousMapping).length)) {
+                DG.showResyncNotice(newPlaceholders, keptPlaceholders, previousMapping);
+            }
         },
 
         loadExistingMapping: function() {
@@ -251,7 +283,13 @@
                 $source.val(config.source);
 
                 // Load fields for this source, then set the field value.
-                if (config.source) {
+                if (config.source === 'custom') {
+                    // Replace field dropdown with text input for custom text.
+                    var $fieldCell = $row.find('.column-field');
+                    $fieldCell.html(
+                        '<input type="text" class="dg-custom-text-input regular-text" data-placeholder="' + placeholder + '" placeholder="' + dgAdmin.strings.enterCustomText + '" value="' + (config.meta || '').replace(/"/g, '&quot;') + '">'
+                    );
+                } else if (config.source) {
                     DG.loadFieldsForSource(config.source, function(fields) {
                         var $field = $row.find('.dg-field-select');
                         DG.populateFieldSelect($field, fields);
@@ -266,13 +304,37 @@
             var source = $select.val();
             var placeholder = $select.data('placeholder');
             var $row = $select.closest('.dg-mapping-row');
-            var $fieldSelect = $row.find('.dg-field-select');
+            var $fieldCell = $row.find('.column-field');
 
             if (!source) {
-                $fieldSelect.html('<option value="">' + dgAdmin.strings.selectField + '</option>');
+                $fieldCell.html(
+                    '<select class="dg-field-select" data-placeholder="' + placeholder + '">' +
+                    '<option value="">' + dgAdmin.strings.selectField + '</option>' +
+                    '</select>'
+                );
+                DG.updateMappingFromUI();
                 return;
             }
 
+            // For custom text, show a text input instead of a dropdown.
+            if (source === 'custom') {
+                $fieldCell.html(
+                    '<input type="text" class="dg-custom-text-input regular-text" data-placeholder="' + placeholder + '" placeholder="' + dgAdmin.strings.enterCustomText + '">'
+                );
+                DG.updateMappingFromUI();
+                return;
+            }
+
+            // Restore dropdown if switching from custom to another source.
+            if ($fieldCell.find('.dg-field-select').length === 0) {
+                $fieldCell.html(
+                    '<select class="dg-field-select" data-placeholder="' + placeholder + '">' +
+                    '<option value="">' + dgAdmin.strings.selectField + '</option>' +
+                    '</select>'
+                );
+            }
+
+            var $fieldSelect = $fieldCell.find('.dg-field-select');
             DG.loadFieldsForSource(source, function(fields) {
                 DG.populateFieldSelect($fieldSelect, fields);
             });
@@ -323,12 +385,21 @@
                 var $row = $(this);
                 var placeholder = $row.data('placeholder');
                 var source = $row.find('.dg-source-select').val();
-                var field = $row.find('.dg-field-select').val();
+                var field = '';
+                var meta = '';
+
+                if (source === 'custom') {
+                    meta = $row.find('.dg-custom-text-input').val() || '';
+                    field = 'custom_text';
+                } else {
+                    field = $row.find('.dg-field-select').val() || '';
+                }
+
                 if (placeholder) {
                     mapping[placeholder] = {
                         source: source || '',
-                        field: field || '',
-                        meta: ''
+                        field: field,
+                        meta: meta
                     };
                 }
             });
@@ -460,6 +531,40 @@
         copyShortcode: function() {
             var text = $('#dg-shortcode-code').text();
             this.copyToClipboard(text);
+        },
+
+        showResyncNotice: function(newPlaceholders, keptPlaceholders, previousMapping) {
+            // Count removed placeholders (were in previous mapping but not in new placeholders).
+            var allNewPlaceholders = [];
+            $('#dg-mapping-body .dg-mapping-row').each(function() {
+                allNewPlaceholders.push($(this).data('placeholder'));
+            });
+            var removedCount = 0;
+            Object.keys(previousMapping).forEach(function(p) {
+                if (!previousMapping[p].is_repeat && allNewPlaceholders.indexOf(p) === -1) {
+                    removedCount++;
+                }
+            });
+
+            var parts = [];
+            if (keptPlaceholders.length > 0) {
+                parts.push(keptPlaceholders.length + ' mapping(s) preserved');
+            }
+            if (newPlaceholders.length > 0) {
+                parts.push(newPlaceholders.length + ' new placeholder(s) detected');
+            }
+            if (removedCount > 0) {
+                parts.push(removedCount + ' removed placeholder(s) cleaned up');
+            }
+
+            if (parts.length > 0) {
+                var $notice = $('<div class="dg-resync-notice notice notice-info"><p><strong>Template re-synced:</strong> ' + parts.join(', ') + '.</p></div>');
+                $('#dg-mapping-section .dg-section-title').after($notice);
+
+                setTimeout(function() {
+                    $notice.fadeOut(function() { $(this).remove(); });
+                }, 6000);
+            }
         },
 
         copyToClipboard: function(text) {

@@ -143,6 +143,19 @@
     max-width: 100%;
 }
 
+.dg-mapping-row.dg-new-placeholder {
+    background: #fcf9e8;
+}
+
+.dg-mapping-row.dg-new-placeholder .column-placeholder code {
+    background: #f0c33c;
+    color: #1d2327;
+}
+
+.dg-resync-notice {
+    margin: 10px 0;
+}
+
 .dg-mapping-row code {
     background: #f0f0f1;
     padding: 3px 6px;

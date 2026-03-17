@@ -103,6 +103,7 @@ class DG_Admin {
                 'error'          => __( 'An error occurred. Please try again.', 'document-generator' ),
                 'noPlaceholders' => __( 'No placeholders found in this document.', 'document-generator' ),
                 'selectField'    => __( '— Select a field —', 'document-generator' ),
+                'enterCustomText' => __( 'Enter custom text...', 'document-generator' ),
             ),
         ) );
     }
