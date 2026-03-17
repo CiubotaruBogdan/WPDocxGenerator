@@ -146,7 +146,6 @@ $new_template_url = admin_url( 'admin.php?page=document-generator-new' );
                         <li><strong>Toolset Repeating Fields:</strong> depends on your Toolset field configuration</li>
                     </ul>
                 </li>
-                <li>You can filter WordPress Users by role in the "Extra / Custom Value" field (e.g., enter <code>administrator</code>)</li>
             </ul>
         </div>
 
@@ -160,7 +159,7 @@ $new_template_url = admin_url( 'admin.php?page=document-generator-new' );
                     <tr><td><strong>User Fields</strong></td><td>Data from the currently logged-in user (name, email, role, user meta, etc.)</td></tr>
                     <tr><td><strong>Site Fields</strong></td><td>WordPress site info (site name, URL, admin email, etc.)</td></tr>
                     <tr><td><strong>Post/Page Fields</strong></td><td>Data from the current post/page where the shortcode is placed</td></tr>
-                    <tr><td><strong>Custom Text</strong></td><td>Static text you define in the "Extra / Custom Value" column</td></tr>
+                    <tr><td><strong>Custom Text</strong></td><td>Static text you define when selecting the Custom Text source</td></tr>
                     <tr><td><strong>Date/Time</strong></td><td>Current date/time in various formats</td></tr>
                     <tr><td><strong>CPT: ...</strong></td><td>Custom Post Type fields (auto-detected from your registered CPTs)</td></tr>
                     <tr><td><strong>Toolset Custom Fields</strong></td><td>Fields created with Toolset Types plugin</td></tr>
@@ -177,9 +176,7 @@ $new_template_url = admin_url( 'admin.php?page=document-generator-new' );
             <table class="wp-list-table widefat striped" style="max-width:800px;">
                 <thead><tr><th>Shortcode</th><th>Description</th></tr></thead>
                 <tbody>
-                    <tr><td><code>[document_generator id="123"]</code></td><td>Basic usage - shows download button(s) as configured</td></tr>
-                    <tr><td><code>[document_generator id="123" format="docx"]</code></td><td>Force DOCX-only download</td></tr>
-                    <tr><td><code>[document_generator id="123" format="pdf"]</code></td><td>Force PDF-only download</td></tr>
+                    <tr><td><code>[document_generator id="123"]</code></td><td>Basic usage - shows download button</td></tr>
                     <tr><td><code>[document_generator id="123" class="my-class"]</code></td><td>Add a custom CSS class to the button wrapper</td></tr>
                 </tbody>
             </table>
@@ -193,7 +190,6 @@ $new_template_url = admin_url( 'admin.php?page=document-generator-new' );
             <ul>
                 <li><strong>Word splits placeholders:</strong> Sometimes Word breaks <code>#placeholder#</code> into separate XML runs (e.g., <code>#place</code> + <code>holder#</code>). The plugin auto-merges these, but if a placeholder is not detected, try retyping it in one go (without editing individual characters).</li>
                 <li><strong>Formatting is preserved:</strong> Bold, italic, colors, fonts, and other formatting applied to placeholder text in Word will be kept in the generated document.</li>
-                <li><strong>PDF conversion:</strong> Requires LibreOffice installed on the server (<code>apt-get install libreoffice</code>). Without it, only DOCX download is available.</li>
                 <li><strong>Role restriction:</strong> Use the "Allowed Roles" setting to control which users can see and use the download button.</li>
             </ul>
         </div>

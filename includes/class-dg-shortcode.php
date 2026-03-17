@@ -31,7 +31,6 @@ class DG_Shortcode {
         $atts = shortcode_atts( array(
             'id'     => 0,
             'class'  => '',
-            'format' => '', // Empty = let user choose, 'docx' or 'pdf' to force.
         ), $atts, 'document_generator' );
 
         $template_id = absint( $atts['id'] );
@@ -54,16 +53,6 @@ class DG_Shortcode {
         $button_text = get_post_meta( $template_id, '_dg_button_text', true );
         if ( empty( $button_text ) ) {
             $button_text = __( 'Download Document', 'document-generator' );
-        }
-
-        // Format: shortcode attribute overrides saved setting.
-        $saved_format = get_post_meta( $template_id, '_dg_button_format', true );
-        if ( empty( $saved_format ) ) {
-            $saved_format = 'both';
-        }
-        $forced_format = sanitize_text_field( $atts['format'] );
-        if ( empty( $forced_format ) ) {
-            $forced_format = $saved_format;
         }
 
         // Button style.
@@ -92,16 +81,6 @@ class DG_Shortcode {
             esc_attr( $button_style['border_radius'] )
         );
 
-        // PDF button uses slightly different color by default (red-ish).
-        $pdf_style = $inline_style;
-        if ( $button_style['bg_color'] === '#2b579a' ) {
-            // Only override if using default color.
-            $pdf_style = str_replace( 'background-color:#2b579a', 'background-color:#d32f2f', $pdf_style );
-            if ( empty( $button_style['border_color'] ) || $button_style['border_color'] === '#2b579a' ) {
-                $pdf_style = str_replace( 'solid #2b579a', 'solid #d32f2f', $pdf_style );
-            }
-        }
-
         $extra_class = sanitize_html_class( $atts['class'] );
         $nonce       = wp_create_nonce( 'dg_download_' . $template_id );
 
@@ -116,38 +95,15 @@ class DG_Shortcode {
         ob_start();
         ?>
         <div class="dg-download-wrapper <?php echo esc_attr( $extra_class ); ?>" data-template-id="<?php echo esc_attr( $template_id ); ?>">
-            <?php if ( 'both' === $forced_format ) : ?>
-                <div class="dg-format-selector">
-                    <button type="button"
-                            class="dg-download-btn dg-btn-docx"
-                            style="<?php echo $inline_style; ?>"
-                            data-template-id="<?php echo esc_attr( $template_id ); ?>"
-                            data-format="docx"
-                            data-nonce="<?php echo esc_attr( $nonce ); ?>">
-                        <span class="dg-icon dg-icon-docx"></span>
-                        <?php echo esc_html( $button_text ); ?> (DOCX)
-                    </button>
-                    <button type="button"
-                            class="dg-download-btn dg-btn-pdf"
-                            style="<?php echo $pdf_style; ?>"
-                            data-template-id="<?php echo esc_attr( $template_id ); ?>"
-                            data-format="pdf"
-                            data-nonce="<?php echo esc_attr( $nonce ); ?>">
-                        <span class="dg-icon dg-icon-pdf"></span>
-                        <?php echo esc_html( $button_text ); ?> (PDF)
-                    </button>
-                </div>
-            <?php else : ?>
-                <button type="button"
-                        class="dg-download-btn dg-btn-<?php echo esc_attr( $forced_format ); ?>"
-                        style="<?php echo ( 'pdf' === $forced_format ? $pdf_style : $inline_style ); ?>"
-                        data-template-id="<?php echo esc_attr( $template_id ); ?>"
-                        data-format="<?php echo esc_attr( $forced_format ); ?>"
-                        data-nonce="<?php echo esc_attr( $nonce ); ?>">
-                    <span class="dg-icon dg-icon-<?php echo esc_attr( $forced_format ); ?>"></span>
-                    <?php echo esc_html( $button_text ); ?>
-                </button>
-            <?php endif; ?>
+            <button type="button"
+                    class="dg-download-btn dg-btn-docx"
+                    style="<?php echo $inline_style; ?>"
+                    data-template-id="<?php echo esc_attr( $template_id ); ?>"
+                    data-format="docx"
+                    data-nonce="<?php echo esc_attr( $nonce ); ?>">
+                <span class="dg-icon dg-icon-docx"></span>
+                <?php echo esc_html( $button_text ); ?>
+            </button>
             <div class="dg-status" style="display:none;"></div>
         </div>
         <?php
@@ -198,7 +154,6 @@ class DG_Shortcode {
      */
     public function handle_download() {
         $template_id = isset( $_POST['template_id'] ) ? absint( $_POST['template_id'] ) : 0;
-        $format      = isset( $_POST['format'] ) ? sanitize_text_field( $_POST['format'] ) : 'docx';
         $post_id     = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 
         if ( ! $template_id ) {
@@ -216,13 +171,8 @@ class DG_Shortcode {
             wp_send_json_error( __( 'You do not have permission to download this document.', 'document-generator' ) );
         }
 
-        // Validate format.
-        if ( ! in_array( $format, array( 'docx', 'pdf' ), true ) ) {
-            $format = 'docx';
-        }
-
         $generator = new DG_Generator();
-        $file_path = $generator->generate( $template_id, $format, $post_id );
+        $file_path = $generator->generate( $template_id, $post_id );
 
         if ( is_wp_error( $file_path ) ) {
             wp_send_json_error( $file_path->get_error_message() );
@@ -231,9 +181,8 @@ class DG_Shortcode {
         // Create a temporary download token.
         $token = wp_generate_password( 32, false );
         set_transient( 'dg_download_' . $token, array(
-            'path'   => $file_path,
-            'format' => $format,
-            'name'   => sanitize_file_name( get_the_title( $template_id ) ) . '.' . $format,
+            'path' => $file_path,
+            'name' => sanitize_file_name( get_the_title( $template_id ) ) . '.docx',
         ), 300 ); // 5 minute expiry.
 
         wp_send_json_success( array(
@@ -290,17 +239,10 @@ add_action( 'template_redirect', function() {
     // Delete the transient (one-time download).
     delete_transient( 'dg_download_' . $token );
 
-    $format   = $data['format'];
     $filename = $data['name'];
 
-    if ( 'pdf' === $format ) {
-        $content_type = 'application/pdf';
-    } else {
-        $content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    }
-
     // Send file.
-    header( 'Content-Type: ' . $content_type );
+    header( 'Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document' );
     header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
     header( 'Content-Length: ' . filesize( $data['path'] ) );
     header( 'Cache-Control: no-cache, no-store, must-revalidate' );

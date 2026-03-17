@@ -37,9 +37,6 @@
             $(document).on('change', '.dg-field-select', function() {
                 DG.updateMappingFromUI();
             });
-            $(document).on('input', '.dg-meta-input', function() {
-                DG.updateMappingFromUI();
-            });
 
             // Save.
             $('#dg-template-form').on('submit', function(e) {
@@ -189,7 +186,7 @@
             var repeatBlocks = data.repeat_blocks || [];
 
             if (placeholders.length === 0 && repeatBlocks.length === 0) {
-                $body.html('<tr><td colspan="5">' + dgAdmin.strings.noPlaceholders + '</td></tr>');
+                $body.html('<tr><td colspan="3">' + dgAdmin.strings.noPlaceholders + '</td></tr>');
                 return;
             }
 
@@ -262,9 +259,6 @@
                     });
                 }
 
-                if (config.meta) {
-                    $row.find('.dg-meta-input').val(config.meta);
-                }
             });
         },
 
@@ -330,13 +324,11 @@
                 var placeholder = $row.data('placeholder');
                 var source = $row.find('.dg-source-select').val();
                 var field = $row.find('.dg-field-select').val();
-                var meta = $row.find('.dg-meta-input').val();
-
                 if (placeholder) {
                     mapping[placeholder] = {
                         source: source || '',
                         field: field || '',
-                        meta: meta || ''
+                        meta: ''
                     };
                 }
             });
@@ -393,7 +385,6 @@
                 mapping: JSON.stringify(this.mapping),
                 allowed_roles: [],
                 button_text: $('#dg-button-text').val(),
-                button_format: $('#dg-button-format').val(),
                 'button_style[bg_color]': $('input[name="button_style[bg_color]"]').val(),
                 'button_style[text_color]': $('input[name="button_style[text_color]"]').val(),
                 'button_style[border_color]': $('input[name="button_style[border_color]"]').val(),

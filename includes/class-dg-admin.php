@@ -219,7 +219,6 @@ class DG_Admin {
         $mapping_raw   = isset( $_POST['mapping'] ) ? wp_unslash( $_POST['mapping'] ) : '{}';
         $allowed_roles = isset( $_POST['allowed_roles'] ) ? array_map( 'sanitize_text_field', (array) $_POST['allowed_roles'] ) : array();
         $button_text   = isset( $_POST['button_text'] ) ? sanitize_text_field( wp_unslash( $_POST['button_text'] ) ) : __( 'Download Document', 'document-generator' );
-        $button_format = isset( $_POST['button_format'] ) ? sanitize_text_field( $_POST['button_format'] ) : 'both';
         $button_style  = array();
         if ( isset( $_POST['button_style'] ) && is_array( $_POST['button_style'] ) ) {
             $button_style = array(
@@ -231,10 +230,6 @@ class DG_Admin {
                 'border_radius' => absint( $_POST['button_style']['border_radius'] ?? 6 ),
             );
         }
-        if ( ! in_array( $button_format, array( 'both', 'docx', 'pdf' ), true ) ) {
-            $button_format = 'both';
-        }
-
         if ( empty( $title ) ) {
             wp_send_json_error( __( 'Title is required.', 'document-generator' ) );
         }
@@ -282,7 +277,6 @@ class DG_Admin {
         update_post_meta( $post_id, '_dg_mapping', $clean_mapping );
         update_post_meta( $post_id, '_dg_allowed_roles', $allowed_roles );
         update_post_meta( $post_id, '_dg_button_text', $button_text );
-        update_post_meta( $post_id, '_dg_button_format', $button_format );
         if ( ! empty( $button_style ) ) {
             update_post_meta( $post_id, '_dg_button_style', $button_style );
         }
