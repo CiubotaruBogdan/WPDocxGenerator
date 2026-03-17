@@ -784,6 +784,41 @@ class DG_Fields {
             return '';
         }
 
+        $target_post_type = substr( $source, 4 ); // e.g. 'culori', 'marci'
+        $context_post_type = get_post_type( $post_id );
+
+        // If the context post is already the target CPT, read directly.
+        if ( $context_post_type === $target_post_type ) {
+            return $this->read_cpt_field( $field, $post_id );
+        }
+
+        // Otherwise, find the related post via Toolset relationships.
+        $related_ids = $this->get_toolset_related_posts( $post_id, $target_post_type );
+
+        if ( empty( $related_ids ) ) {
+            return '';
+        }
+
+        // For 1-to-1 relationships, return the single related post's field.
+        if ( count( $related_ids ) === 1 ) {
+            return $this->read_cpt_field( $field, $related_ids[0] );
+        }
+
+        // For 1-to-many, concatenate values separated by comma.
+        $values = array();
+        foreach ( $related_ids as $related_id ) {
+            $val = $this->read_cpt_field( $field, $related_id );
+            if ( $val !== '' ) {
+                $values[] = $val;
+            }
+        }
+        return implode( ', ', $values );
+    }
+
+    /**
+     * Read a field value directly from a CPT post.
+     */
+    private function read_cpt_field( $field, $post_id ) {
         if ( strpos( $field, 'cpt_meta_' ) === 0 ) {
             $meta_key = substr( $field, 9 );
             return get_post_meta( $post_id, $meta_key, true );
@@ -804,13 +839,27 @@ class DG_Fields {
         $post_type = substr( $source, 4 );
         $rows = array();
 
-        $children = get_posts( array(
-            'post_type'      => $post_type,
-            'post_parent'    => $post_id,
-            'posts_per_page' => -1,
-            'orderby'        => 'menu_order',
-            'order'          => 'ASC',
-        ) );
+        // Try Toolset relationships first.
+        $related_ids = $this->get_toolset_related_posts( $post_id, $post_type );
+
+        if ( ! empty( $related_ids ) ) {
+            $children = array();
+            foreach ( $related_ids as $rid ) {
+                $p = get_post( $rid );
+                if ( $p ) {
+                    $children[] = $p;
+                }
+            }
+        } else {
+            // Fallback to post_parent for non-Toolset setups.
+            $children = get_posts( array(
+                'post_type'      => $post_type,
+                'post_parent'    => $post_id,
+                'posts_per_page' => -1,
+                'orderby'        => 'menu_order',
+                'order'          => 'ASC',
+            ) );
+        }
 
         foreach ( $children as $index => $child ) {
             $row = array(
@@ -833,6 +882,93 @@ class DG_Fields {
         }
 
         return $rows;
+    }
+
+    /**
+     * Find related posts via Toolset relationship tables.
+     *
+     * Queries toolset_associations and toolset_connected_elements
+     * to find posts of $target_post_type related to $post_id.
+     *
+     * @param int    $post_id          The context post ID.
+     * @param string $target_post_type The target CPT slug.
+     * @return array Array of related post IDs.
+     */
+    private function get_toolset_related_posts( $post_id, $target_post_type ) {
+        global $wpdb;
+
+        // Check if Toolset tables exist.
+        $associations_table = $wpdb->prefix . 'toolset_associations';
+        $elements_table     = $wpdb->prefix . 'toolset_connected_elements';
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $table_exists = $wpdb->get_var(
+            $wpdb->prepare( 'SHOW TABLES LIKE %s', $associations_table )
+        );
+        if ( ! $table_exists ) {
+            return array();
+        }
+
+        // Find the group_id(s) for this post in connected_elements.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $group_ids = $wpdb->get_col( $wpdb->prepare(
+            "SELECT group_id FROM {$elements_table} WHERE element_id = %d",
+            $post_id
+        ) );
+
+        if ( empty( $group_ids ) ) {
+            return array();
+        }
+
+        // Find all associations where this post is parent or child.
+        $ph = implode( ',', array_fill( 0, count( $group_ids ), '%d' ) );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $assocs = $wpdb->get_results( $wpdb->prepare(
+            "SELECT a.parent_id, a.child_id
+             FROM {$associations_table} a
+             WHERE a.parent_id IN ({$ph}) OR a.child_id IN ({$ph})",
+            array_merge( $group_ids, $group_ids )
+        ) );
+
+        if ( empty( $assocs ) ) {
+            return array();
+        }
+
+        // Collect the "other side" group_ids.
+        $other_group_ids = array();
+        foreach ( $assocs as $a ) {
+            if ( in_array( (int) $a->parent_id, array_map( 'intval', $group_ids ), true ) ) {
+                $other_group_ids[] = (int) $a->child_id;
+            } else {
+                $other_group_ids[] = (int) $a->parent_id;
+            }
+        }
+
+        $other_group_ids = array_unique( $other_group_ids );
+        if ( empty( $other_group_ids ) ) {
+            return array();
+        }
+
+        // Resolve group_ids to element_ids (actual post IDs).
+        $ph2 = implode( ',', array_fill( 0, count( $other_group_ids ), '%d' ) );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $related_post_ids = $wpdb->get_col( $wpdb->prepare(
+            "SELECT element_id FROM {$elements_table} WHERE group_id IN ({$ph2})",
+            $other_group_ids
+        ) );
+
+        // Filter to only include posts of the target post type.
+        $result = array();
+        foreach ( $related_post_ids as $rpid ) {
+            $rpid = (int) $rpid;
+            if ( get_post_type( $rpid ) === $target_post_type ) {
+                $result[] = $rpid;
+            }
+        }
+
+        return $result;
     }
 
     /**
