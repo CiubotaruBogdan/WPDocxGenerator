@@ -16,29 +16,33 @@ class DG_Template {
      * @return array|WP_Error Array of placeholder names or error.
      */
     public function extract_placeholders( $filepath ) {
-        $content = $this->get_docx_xml( $filepath );
+        $parts = $this->get_all_xml_parts( $filepath );
 
-        if ( is_wp_error( $content ) ) {
-            return $content;
+        if ( is_wp_error( $parts ) ) {
+            return $parts;
         }
 
-        // Merge split placeholder runs first.
-        $content = $this->merge_split_runs( $content );
-
-        $placeholders = array();
-
-        // Match standard placeholders: #name#
-        if ( preg_match_all( '/#([a-zA-Z0-9_]+)#/', $content, $matches ) ) {
-            $placeholders = array_unique( $matches[1] );
-        }
-
-        // Match repeat blocks: #repeat:source_name# and their inner placeholders.
+        $placeholders  = array();
         $repeat_blocks = array();
-        if ( preg_match_all( '/#repeat:([a-zA-Z0-9_]+)#/', $content, $rep_matches ) ) {
-            foreach ( $rep_matches[1] as $block_name ) {
-                $repeat_blocks[] = $block_name;
+
+        foreach ( $parts as $part_name => $content ) {
+            // Merge split placeholder runs first.
+            $content = $this->merge_split_runs( $content );
+
+            // Match standard placeholders: #name#
+            if ( preg_match_all( '/#([a-zA-Z0-9_]+)#/', $content, $matches ) ) {
+                $placeholders = array_merge( $placeholders, $matches[1] );
+            }
+
+            // Match repeat blocks: #repeat:source_name# and their inner placeholders.
+            if ( preg_match_all( '/#repeat:([a-zA-Z0-9_]+)#/', $content, $rep_matches ) ) {
+                foreach ( $rep_matches[1] as $block_name ) {
+                    $repeat_blocks[] = $block_name;
+                }
             }
         }
+
+        $placeholders = array_unique( $placeholders );
 
         // Remove repeat/endrepeat markers from placeholder list.
         $placeholders = array_filter( $placeholders, function( $p ) {
@@ -146,7 +150,9 @@ class DG_Template {
      * Within a paragraph, merge runs that contain split placeholders.
      */
     private function merge_paragraph_runs( $paragraph, $xpath ) {
-        $runs = $xpath->query( './/w:r', $paragraph );
+        // Use ./w:r (direct children) instead of .//w:r to avoid processing
+        // runs inside nested textbox paragraphs as part of the outer paragraph.
+        $runs = $xpath->query( './w:r', $paragraph );
         if ( $runs->length < 2 ) {
             return;
         }
@@ -156,7 +162,7 @@ class DG_Template {
         $run_texts = array();
 
         foreach ( $runs as $run ) {
-            $text_nodes = $xpath->query( './/w:t', $run );
+            $text_nodes = $xpath->query( './w:t', $run );
             $text = '';
             foreach ( $text_nodes as $t ) {
                 $text .= $t->textContent;
@@ -196,7 +202,7 @@ class DG_Template {
         }
 
         for ( $i = 0; $i < count( $run_list ); $i++ ) {
-            $text_nodes = $xpath->query( './/w:t', $run_list[ $i ] );
+            $text_nodes = $xpath->query( './w:t', $run_list[ $i ] );
             $text = '';
             foreach ( $text_nodes as $t ) {
                 $text .= $t->textContent;
@@ -217,7 +223,7 @@ class DG_Template {
                     $in_placeholder = false;
 
                     // Merge: put all text in the first run, clear the rest.
-                    $first_text_nodes = $xpath->query( './/w:t', $run_list[ $merge_start ] );
+                    $first_text_nodes = $xpath->query( './w:t', $run_list[ $merge_start ] );
                     if ( $first_text_nodes->length > 0 ) {
                         $first_text_nodes->item( 0 )->textContent = $buffer;
                         $first_text_nodes->item( 0 )->setAttribute( 'xml:space', 'preserve' );
@@ -225,7 +231,7 @@ class DG_Template {
 
                     // Remove text from merged runs.
                     for ( $j = $merge_start + 1; $j <= $i; $j++ ) {
-                        $other_text_nodes = $xpath->query( './/w:t', $run_list[ $j ] );
+                        $other_text_nodes = $xpath->query( './w:t', $run_list[ $j ] );
                         foreach ( $other_text_nodes as $t ) {
                             $t->textContent = '';
                         }
