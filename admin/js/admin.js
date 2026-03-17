@@ -38,6 +38,11 @@
                 DG.updateMappingFromUI();
             });
 
+            // Custom text input - update mapping on input.
+            $(document).on('input', '.dg-custom-text-input', function() {
+                DG.updateMappingFromUI();
+            });
+
             // Save.
             $('#dg-template-form').on('submit', function(e) {
                 e.preventDefault();
@@ -251,7 +256,13 @@
                 $source.val(config.source);
 
                 // Load fields for this source, then set the field value.
-                if (config.source) {
+                if (config.source === 'custom') {
+                    // Replace field dropdown with text input for custom text.
+                    var $fieldCell = $row.find('.column-field');
+                    $fieldCell.html(
+                        '<input type="text" class="dg-custom-text-input regular-text" data-placeholder="' + placeholder + '" placeholder="' + dgAdmin.strings.enterCustomText + '" value="' + (config.meta || '').replace(/"/g, '&quot;') + '">'
+                    );
+                } else if (config.source) {
                     DG.loadFieldsForSource(config.source, function(fields) {
                         var $field = $row.find('.dg-field-select');
                         DG.populateFieldSelect($field, fields);
@@ -266,13 +277,37 @@
             var source = $select.val();
             var placeholder = $select.data('placeholder');
             var $row = $select.closest('.dg-mapping-row');
-            var $fieldSelect = $row.find('.dg-field-select');
+            var $fieldCell = $row.find('.column-field');
 
             if (!source) {
-                $fieldSelect.html('<option value="">' + dgAdmin.strings.selectField + '</option>');
+                $fieldCell.html(
+                    '<select class="dg-field-select" data-placeholder="' + placeholder + '">' +
+                    '<option value="">' + dgAdmin.strings.selectField + '</option>' +
+                    '</select>'
+                );
+                DG.updateMappingFromUI();
                 return;
             }
 
+            // For custom text, show a text input instead of a dropdown.
+            if (source === 'custom') {
+                $fieldCell.html(
+                    '<input type="text" class="dg-custom-text-input regular-text" data-placeholder="' + placeholder + '" placeholder="' + dgAdmin.strings.enterCustomText + '">'
+                );
+                DG.updateMappingFromUI();
+                return;
+            }
+
+            // Restore dropdown if switching from custom to another source.
+            if ($fieldCell.find('.dg-field-select').length === 0) {
+                $fieldCell.html(
+                    '<select class="dg-field-select" data-placeholder="' + placeholder + '">' +
+                    '<option value="">' + dgAdmin.strings.selectField + '</option>' +
+                    '</select>'
+                );
+            }
+
+            var $fieldSelect = $fieldCell.find('.dg-field-select');
             DG.loadFieldsForSource(source, function(fields) {
                 DG.populateFieldSelect($fieldSelect, fields);
             });
@@ -323,12 +358,21 @@
                 var $row = $(this);
                 var placeholder = $row.data('placeholder');
                 var source = $row.find('.dg-source-select').val();
-                var field = $row.find('.dg-field-select').val();
+                var field = '';
+                var meta = '';
+
+                if (source === 'custom') {
+                    meta = $row.find('.dg-custom-text-input').val() || '';
+                    field = 'custom_text';
+                } else {
+                    field = $row.find('.dg-field-select').val() || '';
+                }
+
                 if (placeholder) {
                     mapping[placeholder] = {
                         source: source || '',
-                        field: field || '',
-                        meta: ''
+                        field: field,
+                        meta: meta
                     };
                 }
             });
