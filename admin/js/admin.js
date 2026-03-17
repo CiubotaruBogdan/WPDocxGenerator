@@ -559,7 +559,7 @@
 
             if (parts.length > 0) {
                 var $notice = $('<div class="dg-resync-notice notice notice-info"><p><strong>Template re-synced:</strong> ' + parts.join(', ') + '.</p></div>');
-                $('#dg-mapping-section .dg-section-title').after($notice);
+                $('#dg-mapping-section > h2').after($notice);
 
                 setTimeout(function() {
                     $notice.fadeOut(function() { $(this).remove(); });
