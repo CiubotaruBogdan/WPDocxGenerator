@@ -195,11 +195,33 @@
                 return;
             }
 
+            // Preserve current mapping before rebuilding the table.
+            if ($('#dg-mapping-body .dg-mapping-row').length > 0) {
+                DG.updateMappingFromUI();
+            }
+
             $body.empty();
+
+            // Track which placeholders are new vs. preserved.
+            var previousMapping = DG.mapping || {};
+            var newPlaceholders = [];
+            var keptPlaceholders = [];
 
             placeholders.forEach(function(p) {
                 var html = template.replace(/\{\{data\.placeholder\}\}/g, p);
                 $body.append(html);
+
+                if (previousMapping[p] && previousMapping[p].source) {
+                    keptPlaceholders.push(p);
+                } else {
+                    newPlaceholders.push(p);
+                }
+            });
+
+            // Highlight new placeholders so user can spot them easily.
+            newPlaceholders.forEach(function(p) {
+                var $row = $('[data-placeholder="' + p + '"]').closest('.dg-mapping-row');
+                $row.addClass('dg-new-placeholder');
             });
 
             // Repeat blocks.
@@ -227,8 +249,13 @@
 
             $('#dg-mapping-section').show();
 
-            // If we have existing mapping data, apply it.
+            // Re-apply preserved mapping data.
             DG.applyExistingMapping();
+
+            // Show a notice if there were changes.
+            if (Object.keys(previousMapping).length > 0 && (newPlaceholders.length > 0 || keptPlaceholders.length < Object.keys(previousMapping).length)) {
+                DG.showResyncNotice(newPlaceholders, keptPlaceholders, previousMapping);
+            }
         },
 
         loadExistingMapping: function() {
@@ -504,6 +531,40 @@
         copyShortcode: function() {
             var text = $('#dg-shortcode-code').text();
             this.copyToClipboard(text);
+        },
+
+        showResyncNotice: function(newPlaceholders, keptPlaceholders, previousMapping) {
+            // Count removed placeholders (were in previous mapping but not in new placeholders).
+            var allNewPlaceholders = [];
+            $('#dg-mapping-body .dg-mapping-row').each(function() {
+                allNewPlaceholders.push($(this).data('placeholder'));
+            });
+            var removedCount = 0;
+            Object.keys(previousMapping).forEach(function(p) {
+                if (!previousMapping[p].is_repeat && allNewPlaceholders.indexOf(p) === -1) {
+                    removedCount++;
+                }
+            });
+
+            var parts = [];
+            if (keptPlaceholders.length > 0) {
+                parts.push(keptPlaceholders.length + ' mapping(s) preserved');
+            }
+            if (newPlaceholders.length > 0) {
+                parts.push(newPlaceholders.length + ' new placeholder(s) detected');
+            }
+            if (removedCount > 0) {
+                parts.push(removedCount + ' removed placeholder(s) cleaned up');
+            }
+
+            if (parts.length > 0) {
+                var $notice = $('<div class="dg-resync-notice notice notice-info"><p><strong>Template re-synced:</strong> ' + parts.join(', ') + '.</p></div>');
+                $('#dg-mapping-section .dg-section-title').after($notice);
+
+                setTimeout(function() {
+                    $notice.fadeOut(function() { $(this).remove(); });
+                }, 6000);
+            }
         },
 
         copyToClipboard: function(text) {
