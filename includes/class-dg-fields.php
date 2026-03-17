@@ -39,6 +39,11 @@ class DG_Fields {
             $sources['toolset_repeating'] = __( 'Toolset Repeating Fields (for tables)', 'document-generator' );
         }
 
+        // Add Date Generale if available.
+        if ( $this->is_date_generale_active() ) {
+            $sources['date_generale'] = __( 'Date Generale', 'document-generator' );
+        }
+
         return $sources;
     }
 
@@ -64,6 +69,8 @@ class DG_Fields {
                 return $this->get_toolset_fields();
             case 'toolset_repeating':
                 return $this->get_toolset_repeating_fields();
+            case 'date_generale':
+                return $this->get_date_generale_fields();
             default:
                 // Check if it's a CPT source.
                 if ( strpos( $source, 'cpt_' ) === 0 ) {
@@ -449,6 +456,11 @@ class DG_Fields {
         $context['available_sources'][] = 'date';
         $context['available_sources'][] = 'custom';
 
+        // Date Generale is always available if active.
+        if ( $this->is_date_generale_active() ) {
+            $context['available_sources'][] = 'date_generale';
+        }
+
         // Post fields are available for the current page.
         $context['available_sources'][] = 'post';
 
@@ -521,6 +533,9 @@ class DG_Fields {
 
             case 'toolset':
                 return $this->resolve_toolset_field( $field, $post_id );
+
+            case 'date_generale':
+                return $this->resolve_date_generale_field( $field );
 
             default:
                 if ( strpos( $source, 'cpt_' ) === 0 ) {
@@ -825,5 +840,51 @@ class DG_Fields {
      */
     private function is_toolset_active() {
         return defined( 'WPCF_VERSION' ) || class_exists( 'WPCF_Loader' );
+    }
+
+    // ── Date Generale integration ─────────────────────────────────────────
+
+    /**
+     * Check if Date Generale plugin is active.
+     */
+    private function is_date_generale_active() {
+        return function_exists( 'dg_get_all_variables' );
+    }
+
+    /**
+     * Return all Date Generale variables as selectable fields.
+     */
+    public function get_date_generale_fields() {
+        if ( ! $this->is_date_generale_active() ) {
+            return array();
+        }
+
+        $fields = array();
+        foreach ( dg_get_all_variables() as $key => $value ) {
+            $fields[] = array(
+                'value' => $key,
+                'label' => $key . ( $value !== '' ? ' — ' . mb_strimwidth( $value, 0, 40, '…' ) : '' ),
+            );
+        }
+
+        if ( empty( $fields ) ) {
+            $fields[] = array(
+                'value'    => '',
+                'label'    => __( '(nicio variabilă definită în Date Generale)', 'document-generator' ),
+                'disabled' => true,
+            );
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Resolve a Date Generale variable by key.
+     */
+    private function resolve_date_generale_field( $field ) {
+        if ( ! $this->is_date_generale_active() || empty( $field ) ) {
+            return '';
+        }
+        return dg_get( $field );
     }
 }
