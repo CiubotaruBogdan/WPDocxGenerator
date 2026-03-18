@@ -10,6 +10,7 @@ class DG_Shortcode {
 
     public function __construct() {
         add_shortcode( 'document_generator', array( $this, 'render_shortcode' ) );
+        add_shortcode( 'dg_debug_meta', array( $this, 'render_debug_meta' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
         add_action( 'wp_ajax_dg_download', array( $this, 'handle_download' ) );
         add_action( 'wp_ajax_nopriv_dg_download', array( $this, 'handle_download_denied' ) );
@@ -28,6 +29,77 @@ class DG_Shortcode {
      * @param array $atts Shortcode attributes.
      * @return string HTML output.
      */
+    /**
+     * Debug shortcode: [dg_debug_meta id="TEMPLATE_ID"]
+     * Dumps all child post meta from the Toolset relationship.
+     */
+    public function render_debug_meta( $atts ) {
+        $atts = shortcode_atts( array( 'id' => 0 ), $atts, 'dg_debug_meta' );
+        $template_id = intval( $atts['id'] );
+        if ( ! $template_id ) {
+            return '<p>Lipsește id-ul template-ului.</p>';
+        }
+
+        $post_id = get_the_ID();
+        if ( ! $post_id ) {
+            return '<p>Nu sunt pe o pagină individuală.</p>';
+        }
+
+        // Get relationship slug.
+        $relationship = get_post_meta( $template_id, '_dg_toolset_relationship', true );
+
+        $fields = new DG_Fields();
+        $entries = $fields->resolve_field( 'toolset_rel_' . $relationship, $post_id, 'toolset' );
+
+        // Also extract template placeholders.
+        $filename      = get_post_meta( $template_id, '_dg_filename', true );
+        $template_path = dg_get_templates_dir() . $filename;
+        $template_handler = new DG_Template();
+        $extracted     = $template_handler->extract_placeholders( $template_path );
+        $template_phs  = ! is_wp_error( $extracted ) ? $extracted['placeholders'] : array();
+
+        ob_start();
+        echo '<div style="background:#f5f5f5;padding:15px;margin:20px 0;font-family:monospace;font-size:13px;overflow:auto;">';
+        echo '<h3>DG Debug - Post ID: ' . esc_html( $post_id ) . ' | Template: ' . esc_html( $template_id ) . ' | Relationship: ' . esc_html( $relationship ) . '</h3>';
+
+        echo '<h4>Template Placeholders (' . count( $template_phs ) . '):</h4>';
+        echo '<pre>' . esc_html( implode( ', ', $template_phs ) ) . '</pre>';
+
+        if ( is_array( $entries ) && ! empty( $entries ) ) {
+            echo '<h4>Entry Data (' . count( $entries ) . ' entries):</h4>';
+            foreach ( $entries as $i => $entry ) {
+                echo '<h5>Entry #' . ( $i + 1 ) . ' (post_id: ' . esc_html( $entry['post_id'] ?? '?' ) . ')</h5>';
+                echo '<table border="1" cellpadding="4" style="border-collapse:collapse;margin-bottom:10px;">';
+                echo '<tr><th>Key</th><th>Value</th></tr>';
+                foreach ( $entry as $k => $v ) {
+                    echo '<tr><td>' . esc_html( $k ) . '</td><td>' . esc_html( mb_substr( (string) $v, 0, 200 ) ) . '</td></tr>';
+                }
+                echo '</table>';
+
+                // Raw post meta dump.
+                if ( ! empty( $entry['post_id'] ) ) {
+                    $all_meta = get_post_meta( $entry['post_id'] );
+                    echo '<details><summary>Raw post meta for post ' . esc_html( $entry['post_id'] ) . '</summary>';
+                    echo '<table border="1" cellpadding="4" style="border-collapse:collapse;">';
+                    echo '<tr><th>Meta Key</th><th>Value</th></tr>';
+                    foreach ( $all_meta as $mk => $mv ) {
+                        if ( strpos( $mk, '_' ) === 0 && strpos( $mk, '_wpcf' ) !== 0 ) {
+                            continue; // Skip internal WP meta but keep _wpcf* keys.
+                        }
+                        $display_val = is_array( $mv ) ? $mv[0] : $mv;
+                        echo '<tr><td>' . esc_html( $mk ) . '</td><td>' . esc_html( mb_substr( (string) $display_val, 0, 200 ) ) . '</td></tr>';
+                    }
+                    echo '</table></details>';
+                }
+            }
+        } else {
+            echo '<p>Nu s-au găsit entries. Verifică relationship slug: <strong>' . esc_html( $relationship ) . '</strong></p>';
+        }
+
+        echo '</div>';
+        return ob_get_clean();
+    }
+
     public function render_shortcode( $atts ) {
         $atts = shortcode_atts( array(
             'id'     => 0,
