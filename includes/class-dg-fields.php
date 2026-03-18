@@ -1043,42 +1043,73 @@ class DG_Fields {
 
     /**
      * Get RFG child post IDs by querying Toolset association tables directly.
+     *
+     * Pattern: find group_ids for parent → find associations → resolve child element_ids.
      */
     private function get_rfg_children_from_db( $parent_post_id, $rfg_post_type ) {
         global $wpdb;
 
-        $associations_table = $wpdb->prefix . 'toolset_associations';
-        $elements_table     = $wpdb->prefix . 'toolset_connected_elements';
-        $relationships_table = $wpdb->prefix . 'toolset_relationships';
+        $tbl_elements = $wpdb->prefix . 'toolset_connected_elements';
+        $tbl_assocs   = $wpdb->prefix . 'toolset_associations';
+        $tbl_rels     = $wpdb->prefix . 'toolset_relationships';
 
         // Check if tables exist.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $table_exists = $wpdb->get_var(
-            $wpdb->prepare( 'SHOW TABLES LIKE %s', $associations_table )
-        );
-        if ( ! $table_exists ) {
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '$tbl_assocs'" ) !== $tbl_assocs ) {
             return array();
         }
 
-        // Find the relationship that links to this RFG post type.
+        // Step 1: Find all group_ids for the parent post.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $child_ids = $wpdb->get_col( $wpdb->prepare(
-            "SELECT p.ID
-             FROM {$wpdb->posts} p
-             INNER JOIN {$associations_table} a ON 1=1
-             INNER JOIN {$elements_table} ce_parent ON a.parent_id = ce_parent.group_id
-             INNER JOIN {$elements_table} ce_child ON a.child_id = ce_child.group_id
-             INNER JOIN {$relationships_table} r ON a.relationship_id = r.id
-             WHERE ce_parent.element_id = %d
-               AND p.ID = ce_child.element_id
-               AND p.post_type = %s
-               AND p.post_status IN ('publish','draft','private','inherit')
-             ORDER BY p.menu_order ASC, p.ID ASC",
-            $parent_post_id,
-            $rfg_post_type
+        $parent_groups = $wpdb->get_col( $wpdb->prepare(
+            "SELECT group_id FROM $tbl_elements WHERE element_id = %d",
+            $parent_post_id
         ) );
 
-        return ! empty( $child_ids ) ? array_map( 'intval', $child_ids ) : array();
+        if ( empty( $parent_groups ) ) {
+            return array();
+        }
+
+        // Step 2: Find associations where parent is one of our group_ids.
+        $placeholders = implode( ',', array_fill( 0, count( $parent_groups ), '%d' ) );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $assocs = $wpdb->get_results( $wpdb->prepare(
+            "SELECT a.child_id
+             FROM $tbl_assocs a
+             JOIN $tbl_rels r ON a.relationship_id = r.id
+             WHERE a.parent_id IN ($placeholders)",
+            ...$parent_groups
+        ) );
+
+        if ( empty( $assocs ) ) {
+            return array();
+        }
+
+        // Step 3: Resolve child group_ids to element_ids and filter by post_type.
+        $child_ids = array();
+        $gid_cache = array();
+
+        foreach ( $assocs as $a ) {
+            $child_gid = $a->child_id;
+
+            if ( ! isset( $gid_cache[ $child_gid ] ) ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+                $gid_cache[ $child_gid ] = (int) $wpdb->get_var( $wpdb->prepare(
+                    "SELECT element_id FROM $tbl_elements WHERE group_id = %d LIMIT 1",
+                    $child_gid
+                ) );
+            }
+
+            $element_id = $gid_cache[ $child_gid ];
+            if ( $element_id ) {
+                $post = get_post( $element_id );
+                if ( $post && $post->post_type === $rfg_post_type ) {
+                    $child_ids[] = $element_id;
+                }
+            }
+        }
+
+        return $child_ids;
     }
 
     // ── Date Generale integration ─────────────────────────────────────────
