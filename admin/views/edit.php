@@ -130,12 +130,24 @@ $repeating_sources = $fields_handler->get_toolset_repeating_fields();
                     <td>
                         <select id="dg-repeat-source" name="repeat_source">
                             <option value=""><?php esc_html_e( '— None (single document) —', 'document-generator' ); ?></option>
-                            <?php foreach ( $repeating_sources as $rs ) : ?>
+                            <?php
+                            // Check if saved value exists among current options.
+                            $saved_found = empty( $repeat_source );
+                            foreach ( $repeating_sources as $rs ) :
+                                if ( $rs['value'] === $repeat_source ) {
+                                    $saved_found = true;
+                                }
+                            ?>
                                 <option value="<?php echo esc_attr( $rs['value'] ); ?>"
                                         <?php selected( $repeat_source, $rs['value'] ); ?>>
                                     <?php echo esc_html( $rs['label'] ); ?>
                                 </option>
                             <?php endforeach; ?>
+                            <?php if ( ! $saved_found ) : ?>
+                                <option value="<?php echo esc_attr( $repeat_source ); ?>" selected>
+                                    <?php echo esc_html( $repeat_source ); ?>
+                                </option>
+                            <?php endif; ?>
                         </select>
                         <p class="description">
                             <?php esc_html_e( 'When set, the shortcode renders a table with one download button per repeating entry. Placeholders mapped to Toolset fields will be resolved per entry.', 'document-generator' ); ?>

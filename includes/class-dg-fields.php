@@ -245,6 +245,44 @@ class DG_Fields {
             );
         }
 
+        // Add Toolset fields assigned to this CPT via field groups.
+        if ( $this->is_toolset_active() ) {
+            $toolset_fields  = get_option( 'wpcf-fields', array() );
+            $existing_meta   = is_array( $meta_keys ) ? $meta_keys : array();
+            $groups = get_posts( array(
+                'post_type'      => 'wp-types-group',
+                'post_status'    => 'publish',
+                'posts_per_page' => -1,
+            ) );
+
+            foreach ( $groups as $group ) {
+                $assigned_types = get_post_meta( $group->ID, '_wp_types_group_post_types', true );
+                if ( empty( $assigned_types ) || strpos( $assigned_types, $post_type ) === false ) {
+                    continue;
+                }
+
+                $group_fields_str = get_post_meta( $group->ID, '_wp_types_group_fields', true );
+                if ( empty( $group_fields_str ) ) {
+                    continue;
+                }
+
+                $slugs = array_filter( array_map( 'trim', explode( ',', $group_fields_str ) ) );
+                foreach ( $slugs as $slug ) {
+                    $meta_key = 'wpcf-' . $slug;
+                    // Skip if already listed from postmeta query.
+                    if ( in_array( $meta_key, $existing_meta, true ) ) {
+                        continue;
+                    }
+                    $label = isset( $toolset_fields[ $slug ]['name'] ) ? $toolset_fields[ $slug ]['name'] : $slug;
+                    $type  = isset( $toolset_fields[ $slug ]['type'] ) ? $toolset_fields[ $slug ]['type'] : 'text';
+                    $fields[] = array(
+                        'value' => 'cpt_meta_wpcf-' . $slug,
+                        'label' => sprintf( __( 'Toolset: %s (%s)', 'document-generator' ), $label, $type ),
+                    );
+                }
+            }
+        }
+
         return $fields;
     }
 
