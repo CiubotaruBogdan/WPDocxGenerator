@@ -42,11 +42,8 @@ class DG_Generator {
         $replacements = array();
         $repeat_data  = array();
 
-        // Auto-inject denumire_document placeholder.
-        $document_name = get_post_meta( $template_id, '_dg_document_name', true );
-        if ( $document_name ) {
-            $replacements['denumire_document'] = $document_name;
-        }
+        // Auto-inject denumire_document placeholder from template title.
+        $replacements['denumire_document'] = get_the_title( $template_id );
 
         foreach ( $mapping as $placeholder => $config ) {
             $source = $config['source'] ?? '';

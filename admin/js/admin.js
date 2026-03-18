@@ -452,7 +452,6 @@
                 nonce: dgAdmin.nonce,
                 template_id: $('input[name="template_id"]').val(),
                 title: $('#dg-title').val(),
-                document_name: $('#dg-document-name').val(),
                 filename: $('#dg-filename').val(),
                 mapping: JSON.stringify(this.mapping),
                 allowed_roles: [],
