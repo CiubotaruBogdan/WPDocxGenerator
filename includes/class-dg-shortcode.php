@@ -138,22 +138,36 @@ class DG_Shortcode {
             return;
         }
 
-        // Determine table columns from entry keys (exclude internal keys).
-        $skip_keys = array( 'index', 'post_id', 'title' );
-        $columns   = array();
+        // Extract placeholders from the DOCX template to filter columns.
+        $filename      = get_post_meta( $template_id, '_dg_filename', true );
+        $template_path = dg_get_templates_dir() . $filename;
+        $template_handler = new DG_Template();
+        $extracted     = $template_handler->extract_placeholders( $template_path );
+        $template_phs  = ! is_wp_error( $extracted ) ? $extracted['placeholders'] : array();
+
+        // Build columns: only show entry keys that match a template placeholder.
+        $skip_keys      = array( 'index', 'post_id', 'title' );
+        $columns        = array();
+        $toolset_fields = get_option( 'wpcf-fields', array() );
+
         if ( ! empty( $entries[0] ) ) {
             foreach ( $entries[0] as $key => $val ) {
-                if ( ! in_array( $key, $skip_keys, true ) ) {
-                    $columns[ $key ] = $key;
+                if ( in_array( $key, $skip_keys, true ) ) {
+                    continue;
                 }
-            }
-        }
-
-        // Try to get Toolset field labels for nicer column headers.
-        $toolset_fields = get_option( 'wpcf-fields', array() );
-        foreach ( $columns as $key => $label ) {
-            if ( isset( $toolset_fields[ $key ]['name'] ) ) {
-                $columns[ $key ] = $toolset_fields[ $key ]['name'];
+                // Check if this key (or its underscore variant) matches a placeholder.
+                $underscore_key = str_replace( '-', '_', $key );
+                if ( ! empty( $template_phs ) && ! in_array( $key, $template_phs, true ) && ! in_array( $underscore_key, $template_phs, true ) ) {
+                    continue;
+                }
+                // Use Toolset field label as column header.
+                $label = $key;
+                if ( isset( $toolset_fields[ $key ]['name'] ) ) {
+                    $label = $toolset_fields[ $key ]['name'];
+                } elseif ( isset( $toolset_fields[ str_replace( '_', '-', $key ) ]['name'] ) ) {
+                    $label = $toolset_fields[ str_replace( '_', '-', $key ) ]['name'];
+                }
+                $columns[ $key ] = $label;
             }
         }
         ?>
