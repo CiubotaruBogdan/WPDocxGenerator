@@ -413,30 +413,32 @@ class DG_Fields {
             }
         }
 
-        // Check for Toolset RFG (Repeating Field Groups) via API.
-        if ( function_exists( 'toolset_get_related_posts' ) ) {
-            $rfg_post_types = get_post_types( array( 'public' => false ), 'objects' );
-            foreach ( $rfg_post_types as $pt ) {
-                if ( strpos( $pt->name, 'rfg_' ) === 0 ) {
-                    $fields[] = array(
-                        'value' => 'toolset_rfg_' . $pt->name,
-                        'label' => sprintf( __( 'RFG: %s', 'document-generator' ), $pt->label ),
-                    );
-                }
+        // Check for Toolset RFG (Repeating Field Groups) from registered post types.
+        $rfg_found = array();
+        $all_post_types = get_post_types( array(), 'objects' );
+        foreach ( $all_post_types as $pt ) {
+            if ( strpos( $pt->name, 'rfg_' ) === 0 ) {
+                $rfg_found[ $pt->name ] = $pt->label ?: $pt->name;
             }
         }
 
-        // Fallback: detect RFGs from registered post types even without the API function.
-        if ( ! function_exists( 'toolset_get_related_posts' ) ) {
-            $all_post_types = get_post_types( array(), 'objects' );
-            foreach ( $all_post_types as $pt ) {
-                if ( strpos( $pt->name, 'rfg_' ) === 0 ) {
-                    $fields[] = array(
-                        'value' => 'toolset_rfg_' . $pt->name,
-                        'label' => sprintf( __( 'RFG: %s', 'document-generator' ), $pt->label ),
-                    );
-                }
+        // Fallback: query DB for RFG post types that may not be registered yet.
+        if ( empty( $rfg_found ) ) {
+            global $wpdb;
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $db_rfg_types = $wpdb->get_col(
+                "SELECT DISTINCT post_type FROM {$wpdb->posts} WHERE post_type LIKE 'rfg\\_%' AND post_status != 'auto-draft' LIMIT 50"
+            );
+            foreach ( $db_rfg_types as $rfg_type ) {
+                $rfg_found[ $rfg_type ] = $rfg_type;
             }
+        }
+
+        foreach ( $rfg_found as $name => $label ) {
+            $fields[] = array(
+                'value' => 'toolset_rfg_' . $name,
+                'label' => sprintf( __( 'RFG: %s', 'document-generator' ), $label ),
+            );
         }
 
         return $fields;
