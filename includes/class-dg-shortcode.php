@@ -68,6 +68,37 @@ class DG_Shortcode {
         echo '<h4>Template Placeholders (' . count( $template_phs ) . '):</h4>';
         echo '<pre>' . esc_html( implode( ', ', $template_phs ) ) . '</pre>';
 
+        // --- Current post meta dump ---
+        echo '<h4>Current Post Meta (post_id: ' . esc_html( $post_id ) . ', type: ' . esc_html( get_post_type( $post_id ) ) . '):</h4>';
+        $current_meta = get_post_meta( $post_id );
+        echo '<table border="1" cellpadding="4" style="border-collapse:collapse;margin-bottom:10px;">';
+        echo '<tr><th>Meta Key</th><th>Value</th></tr>';
+        foreach ( $current_meta as $mk => $mv ) {
+            $display_val = is_array( $mv ) ? $mv[0] : $mv;
+            $is_serialized = is_serialized( (string) $display_val );
+            if ( $is_serialized ) {
+                $display_val = print_r( maybe_unserialize( $display_val ), true );
+            }
+            echo '<tr><td>' . esc_html( $mk ) . '</td><td><pre style="margin:0;white-space:pre-wrap;">' . esc_html( mb_substr( (string) $display_val, 0, 500 ) ) . '</pre></td></tr>';
+        }
+        echo '</table>';
+
+        // --- Template meta dump ---
+        echo '<h4>Template Meta (template_id: ' . esc_html( $template_id ) . '):</h4>';
+        $tpl_meta = get_post_meta( $template_id );
+        echo '<table border="1" cellpadding="4" style="border-collapse:collapse;margin-bottom:10px;">';
+        echo '<tr><th>Meta Key</th><th>Value</th></tr>';
+        foreach ( $tpl_meta as $mk => $mv ) {
+            $display_val = is_array( $mv ) ? $mv[0] : $mv;
+            $is_serialized = is_serialized( (string) $display_val );
+            if ( $is_serialized ) {
+                $display_val = print_r( maybe_unserialize( $display_val ), true );
+            }
+            echo '<tr><td>' . esc_html( $mk ) . '</td><td><pre style="margin:0;white-space:pre-wrap;">' . esc_html( mb_substr( (string) $display_val, 0, 500 ) ) . '</pre></td></tr>';
+        }
+        echo '</table>';
+
+        // --- Relationship entries ---
         if ( is_array( $entries ) && ! empty( $entries ) ) {
             echo '<h4>Entry Data (' . count( $entries ) . ' entries):</h4>';
             foreach ( $entries as $i => $entry ) {
@@ -78,25 +109,9 @@ class DG_Shortcode {
                     echo '<tr><td>' . esc_html( $k ) . '</td><td>' . esc_html( mb_substr( (string) $v, 0, 200 ) ) . '</td></tr>';
                 }
                 echo '</table>';
-
-                // Raw post meta dump.
-                if ( ! empty( $entry['post_id'] ) ) {
-                    $all_meta = get_post_meta( $entry['post_id'] );
-                    echo '<details><summary>Raw post meta for post ' . esc_html( $entry['post_id'] ) . '</summary>';
-                    echo '<table border="1" cellpadding="4" style="border-collapse:collapse;">';
-                    echo '<tr><th>Meta Key</th><th>Value</th></tr>';
-                    foreach ( $all_meta as $mk => $mv ) {
-                        if ( strpos( $mk, '_' ) === 0 && strpos( $mk, '_wpcf' ) !== 0 ) {
-                            continue; // Skip internal WP meta but keep _wpcf* keys.
-                        }
-                        $display_val = is_array( $mv ) ? $mv[0] : $mv;
-                        echo '<tr><td>' . esc_html( $mk ) . '</td><td>' . esc_html( mb_substr( (string) $display_val, 0, 200 ) ) . '</td></tr>';
-                    }
-                    echo '</table></details>';
-                }
             }
         } else {
-            echo '<p>Nu s-au găsit entries. Verifică relationship slug: <strong>' . esc_html( $relationship ) . '</strong></p>';
+            echo '<p>Nu s-au găsit entries prin relationship. Relationship slug: <strong>' . esc_html( $relationship ) . '</strong></p>';
         }
 
         echo '</div>';
