@@ -441,6 +441,43 @@ class DG_Fields {
             );
         }
 
+        // Toolset Relationships — connected CPT children as repeating source.
+        global $wpdb;
+        $tbl_rels = $wpdb->prefix . 'toolset_relationships';
+        $tbl_sets = $wpdb->prefix . 'toolset_type_sets';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '$tbl_rels'" ) === $tbl_rels ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $rels = $wpdb->get_results(
+                "SELECT r.id, r.slug, r.display_name_plural, r.parent_types, r.child_types FROM $tbl_rels r"
+            );
+            foreach ( $rels as $r ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+                $parent_types = $wpdb->get_col( $wpdb->prepare(
+                    "SELECT type FROM $tbl_sets WHERE set_id = %d", $r->parent_types
+                ) );
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+                $child_types = $wpdb->get_col( $wpdb->prepare(
+                    "SELECT type FROM $tbl_sets WHERE set_id = %d", $r->child_types
+                ) );
+
+                $parent_label = implode( ', ', $parent_types );
+                $child_label  = implode( ', ', $child_types );
+                $display      = $r->display_name_plural ?: $r->slug;
+
+                $fields[] = array(
+                    'value' => 'toolset_rel_' . $r->slug,
+                    'label' => sprintf(
+                        /* translators: 1: relationship name, 2: parent type, 3: child type */
+                        __( 'Rel: %1$s (%2$s → %3$s)', 'document-generator' ),
+                        $display,
+                        $parent_label,
+                        $child_label
+                    ),
+                );
+            }
+        }
+
         return $fields;
     }
 
@@ -572,6 +609,11 @@ class DG_Fields {
         $field  = $repeat_config['field'] ?? '';
 
         if ( $source === 'toolset_repeating' && $post_id ) {
+            // Handle both old RFG format and new relationship format.
+            if ( strpos( $field, 'toolset_rel_' ) === 0 ) {
+                $rel_slug = substr( $field, 12 );
+                return $this->resolve_toolset_relationship( $rel_slug, $post_id );
+            }
             return $this->resolve_toolset_repeating( $field, $post_id );
         }
 
@@ -845,6 +887,127 @@ class DG_Fields {
 
                 $rows[] = $row;
             }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Resolve connected posts via a Toolset relationship as repeating rows.
+     *
+     * Uses the proven pattern: element_id → group_ids → associations → resolve other side.
+     *
+     * @param string $rel_slug    The relationship slug (e.g. 'solicitare').
+     * @param int    $post_id     The current (parent) post ID.
+     * @return array Array of rows, each row is field_slug => value.
+     */
+    private function resolve_toolset_relationship( $rel_slug, $post_id ) {
+        global $wpdb;
+
+        $tbl_elements = $wpdb->prefix . 'toolset_connected_elements';
+        $tbl_assocs   = $wpdb->prefix . 'toolset_associations';
+        $tbl_rels     = $wpdb->prefix . 'toolset_relationships';
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '$tbl_assocs'" ) !== $tbl_assocs ) {
+            return array();
+        }
+
+        // Find the relationship ID.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $rel_id = $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM $tbl_rels WHERE slug = %s",
+            $rel_slug
+        ) );
+
+        if ( ! $rel_id ) {
+            return array();
+        }
+
+        // Step 1: Find all group_ids for the current post.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $my_groups = $wpdb->get_col( $wpdb->prepare(
+            "SELECT group_id FROM $tbl_elements WHERE element_id = %d",
+            $post_id
+        ) );
+
+        if ( empty( $my_groups ) ) {
+            return array();
+        }
+
+        // Step 2: Find associations for this relationship where current post is parent.
+        $ph = implode( ',', array_fill( 0, count( $my_groups ), '%d' ) );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $assocs = $wpdb->get_results( $wpdb->prepare(
+            "SELECT a.child_id FROM $tbl_assocs a
+             WHERE a.relationship_id = %d AND a.parent_id IN ($ph)",
+            array_merge( array( $rel_id ), $my_groups )
+        ) );
+
+        // Also check if current post is child (reverse direction).
+        if ( empty( $assocs ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $assocs = $wpdb->get_results( $wpdb->prepare(
+                "SELECT a.parent_id AS child_id FROM $tbl_assocs a
+                 WHERE a.relationship_id = %d AND a.child_id IN ($ph)",
+                array_merge( array( $rel_id ), $my_groups )
+            ) );
+        }
+
+        if ( empty( $assocs ) ) {
+            return array();
+        }
+
+        // Step 3: Resolve group_ids to element_ids and build rows.
+        $rows      = array();
+        $gid_cache = array();
+        $index     = 1;
+
+        foreach ( $assocs as $a ) {
+            $other_gid = $a->child_id;
+
+            if ( ! isset( $gid_cache[ $other_gid ] ) ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+                $gid_cache[ $other_gid ] = (int) $wpdb->get_var( $wpdb->prepare(
+                    "SELECT element_id FROM $tbl_elements WHERE group_id = %d LIMIT 1",
+                    $other_gid
+                ) );
+            }
+
+            $element_id = $gid_cache[ $other_gid ];
+            if ( ! $element_id ) {
+                continue;
+            }
+
+            $child_post = get_post( $element_id );
+            if ( ! $child_post ) {
+                continue;
+            }
+
+            $row = array(
+                'index'   => $index,
+                'title'   => $child_post->post_title,
+                'post_id' => $element_id,
+            );
+
+            // Extract all Toolset custom fields from connected post.
+            $child_meta = get_post_meta( $element_id );
+            foreach ( $child_meta as $key => $values ) {
+                if ( strpos( $key, 'wpcf-' ) === 0 ) {
+                    $clean_key = substr( $key, 5 );
+                    $raw_value = is_array( $values ) ? $values[0] : $values;
+                    $formatted = $this->maybe_format_toolset_date( $clean_key, $raw_value );
+                    $row[ $clean_key ] = $formatted;
+                    // Also store underscore variant for placeholder matching.
+                    $underscore_key = str_replace( '-', '_', $clean_key );
+                    if ( $underscore_key !== $clean_key ) {
+                        $row[ $underscore_key ] = $formatted;
+                    }
+                }
+            }
+
+            $rows[] = $row;
+            $index++;
         }
 
         return $rows;
