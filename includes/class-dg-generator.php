@@ -101,9 +101,13 @@ class DG_Generator {
                     if ( isset( $replacements[ $ph ] ) ) {
                         continue;
                     }
-                    // Try direct match, then dash-to-underscore normalization.
-                    $variants = array( $ph, str_replace( '_', '-', $ph ) );
-                    foreach ( $variants as $key ) {
+                    // Try direct match, then dash/underscore normalization.
+                    $variants = array(
+                        $ph,
+                        str_replace( '_', '-', $ph ),
+                        str_replace( '-', '_', $ph ),
+                    );
+                    foreach ( array_unique( $variants ) as $key ) {
                         if ( array_key_exists( $key, $entry_data ) ) {
                             $replacements[ $ph ] = (string) $entry_data[ $key ];
                             break;

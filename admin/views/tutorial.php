@@ -149,6 +149,42 @@ $new_template_url = admin_url( 'admin.php?page=document-generator-new' );
             </ul>
         </div>
 
+        <!-- Repeating Source (Per-Entry Documents) -->
+        <div class="dg-section">
+            <h2>Repeating Source &mdash; Per-Entry Documents</h2>
+
+            <p>Unlike repeating table rows (which generate one document with a dynamic table), the <strong>Repeating Source</strong> setting generates <strong>one separate document per entry</strong>. The shortcode displays a table with a download button for each entry.</p>
+
+            <h3>Supported Repeating Sources</h3>
+            <ul>
+                <li><strong>Toolset Relationships</strong> &mdash; generates one document for each connected post in a Toolset relationship (e.g., one document per "Prevedere" connected to a "Solicitare")</li>
+                <li><strong>Toolset Repeating Field Groups (RFG)</strong> &mdash; one document per RFG entry</li>
+                <li><strong>Simple Repeating Fields</strong> &mdash; one document per value in a repeating Toolset field</li>
+            </ul>
+
+            <h3>Auto-Mapping</h3>
+            <p>When a Repeating Source is selected, placeholders in your DOCX template are <strong>automatically matched</strong> to the fields of each entry. You do <strong>not</strong> need to manually map them in the field mapping table.</p>
+            <p>The matching works by name: a placeholder <code>#prevedere_actuala#</code> will automatically resolve to the Toolset field <code>prevedere-actuala</code> (dashes and underscores are interchangeable).</p>
+            <p>You can still manually map placeholders that come from other sources (e.g., user data, site info, the parent post).</p>
+
+            <h3>Frontend Table</h3>
+            <p>The shortcode renders a table showing <strong>only the columns that correspond to placeholders</strong> in your DOCX template. Column headers use the Toolset field labels for readability.</p>
+
+            <h3>How to Set Up</h3>
+            <ol>
+                <li>Create a <strong>.docx</strong> template with placeholders matching the Toolset field slugs of the child/connected posts (e.g., <code>#prevedere_actuala#</code>, <code>#propunere_de_modificare#</code>, <code>#argumente#</code>)</li>
+                <li>Go to <a href="<?php echo esc_url( $new_template_url ); ?>"><strong>Add New Template</strong></a> and upload your file</li>
+                <li>In the <strong>Repeating Source</strong> dropdown, select the Toolset relationship (e.g., "Rel: Prevederi (solicitare &rarr; prevedere)")</li>
+                <li>Placeholders from the repeating source are auto-mapped &mdash; no manual mapping needed for those fields</li>
+                <li>Map any remaining placeholders (site name, dates, user data, etc.) normally</li>
+                <li>Save and place the shortcode on a <strong>Toolset Content Template</strong> for the parent CPT</li>
+                <li>On the frontend, each parent post will show a table of connected entries with individual download buttons</li>
+            </ol>
+
+            <h3>Placeholder Naming</h3>
+            <p>Use <strong>underscores</strong> in your DOCX placeholders (e.g., <code>#prevedere_actuala#</code>). The plugin automatically matches them to Toolset fields that use dashes (e.g., <code>wpcf-prevedere-actuala</code>).</p>
+        </div>
+
         <!-- Field Sources -->
         <div class="dg-section">
             <h2>Available Field Sources</h2>
@@ -161,8 +197,8 @@ $new_template_url = admin_url( 'admin.php?page=document-generator-new' );
                     <tr><td><strong>Post/Page Fields</strong></td><td>Data from the current post/page where the shortcode is placed</td></tr>
                     <tr><td><strong>Custom Text</strong></td><td>Static text you define when selecting the Custom Text source</td></tr>
                     <tr><td><strong>Date/Time</strong></td><td>Current date/time in various formats</td></tr>
-                    <tr><td><strong>CPT: ...</strong></td><td>Custom Post Type fields (auto-detected from your registered CPTs)</td></tr>
-                    <tr><td><strong>Toolset Custom Fields</strong></td><td>Fields created with Toolset Types plugin</td></tr>
+                    <tr><td><strong>CPT: ...</strong></td><td>Custom Post Type fields (auto-detected from your registered CPTs). When Toolset is active, Toolset fields assigned to the CPT are also included.</td></tr>
+                    <tr><td><strong>Toolset Custom Fields</strong></td><td>Fields created with Toolset Types plugin (all fields, grouped by field group)</td></tr>
                     <tr><td><strong>Toolset Repeating Fields</strong></td><td>For tables: repeating field groups from Toolset (requires context post)</td></tr>
                     <tr><td><strong>WordPress Users</strong></td><td>For tables: lists all WordPress users as repeating rows</td></tr>
                 </tbody>
@@ -189,8 +225,11 @@ $new_template_url = admin_url( 'admin.php?page=document-generator-new' );
             <h2>Tips</h2>
             <ul>
                 <li><strong>Word splits placeholders:</strong> Sometimes Word breaks <code>#placeholder#</code> into separate XML runs (e.g., <code>#place</code> + <code>holder#</code>). The plugin auto-merges these, but if a placeholder is not detected, try retyping it in one go (without editing individual characters).</li>
+                <li><strong>Textbox placeholders:</strong> Placeholders inside Word textboxes (text frames) are fully supported and will be detected and replaced automatically.</li>
                 <li><strong>Formatting is preserved:</strong> Bold, italic, colors, fonts, and other formatting applied to placeholder text in Word will be kept in the generated document.</li>
                 <li><strong>Role restriction:</strong> Use the "Allowed Roles" setting to control which users can see and use the download button.</li>
+                <li><strong>Underscores vs dashes:</strong> Use underscores in placeholder names (e.g., <code>#prevedere_actuala#</code>). The plugin automatically matches them to Toolset fields that use dashes internally.</li>
+                <li><strong>Auto-mapping with Repeating Source:</strong> When you select a Repeating Source, you don't need to manually map the entry fields &mdash; they are matched automatically by name. Only map placeholders that come from other sources (user, site, date, etc.).</li>
             </ul>
         </div>
 
