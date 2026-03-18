@@ -708,22 +708,44 @@ class DG_Fields {
             $slug = substr( $field, 13 );
             $user_id = get_current_user_id();
             if ( function_exists( 'types_render_usermeta_field' ) ) {
-                return types_render_usermeta_field( $slug, array( 'user_id' => $user_id, 'output' => 'raw' ) );
+                $value = types_render_usermeta_field( $slug, array( 'user_id' => $user_id, 'output' => 'raw' ) );
+            } else {
+                $value = get_user_meta( $user_id, 'wpcf-' . $slug, true );
             }
-            return get_user_meta( $user_id, 'wpcf-' . $slug, true );
+            return $this->maybe_format_toolset_date( $slug, $value, 'wpcf-usermeta' );
         }
 
         if ( strpos( $field, 'toolset_' ) === 0 ) {
             $slug = substr( $field, 8 );
             if ( $post_id && function_exists( 'types_render_field' ) ) {
-                return types_render_field( $slug, array( 'post_id' => $post_id, 'output' => 'raw' ) );
+                $value = types_render_field( $slug, array( 'post_id' => $post_id, 'output' => 'raw' ) );
+            } elseif ( $post_id ) {
+                $value = get_post_meta( $post_id, 'wpcf-' . $slug, true );
+            } else {
+                return '';
             }
-            if ( $post_id ) {
-                return get_post_meta( $post_id, 'wpcf-' . $slug, true );
-            }
+            return $this->maybe_format_toolset_date( $slug, $value, 'wpcf-fields' );
         }
 
         return '';
+    }
+
+    /**
+     * Format a Toolset field value as a date if the field type is 'date'.
+     */
+    private function maybe_format_toolset_date( $slug, $value, $option_name = 'wpcf-fields' ) {
+        if ( $value === '' || $value === null || $value === false ) {
+            return '';
+        }
+
+        $toolset_fields = get_option( $option_name, array() );
+        $field_type = isset( $toolset_fields[ $slug ]['type'] ) ? $toolset_fields[ $slug ]['type'] : '';
+
+        if ( $field_type === 'date' && is_numeric( $value ) ) {
+            return wp_date( get_option( 'date_format', 'd.m.Y' ), (int) $value );
+        }
+
+        return $value;
     }
 
     private function resolve_toolset_repeating( $field, $post_id ) {
@@ -736,7 +758,7 @@ class DG_Fields {
             if ( is_array( $values ) ) {
                 foreach ( $values as $index => $value ) {
                     $rows[] = array(
-                        $slug          => $value,
+                        $slug          => $this->maybe_format_toolset_date( $slug, $value ),
                         'index'        => $index + 1,
                     );
                 }
@@ -767,7 +789,8 @@ class DG_Fields {
                     foreach ( $child_meta as $key => $values ) {
                         if ( strpos( $key, 'wpcf-' ) === 0 ) {
                             $clean_key = substr( $key, 5 );
-                            $row[ $clean_key ] = is_array( $values ) ? $values[0] : $values;
+                            $raw_value = is_array( $values ) ? $values[0] : $values;
+                            $row[ $clean_key ] = $this->maybe_format_toolset_date( $clean_key, $raw_value );
                         }
                     }
 
