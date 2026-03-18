@@ -217,6 +217,7 @@ class DG_Admin {
         $template_id   = isset( $_POST['template_id'] ) ? absint( $_POST['template_id'] ) : 0;
         $title         = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
         $filename      = isset( $_POST['filename'] ) ? sanitize_file_name( wp_unslash( $_POST['filename'] ) ) : '';
+        $repeat_source = isset( $_POST['repeat_source'] ) ? sanitize_text_field( wp_unslash( $_POST['repeat_source'] ) ) : '';
         $mapping_raw   = isset( $_POST['mapping'] ) ? wp_unslash( $_POST['mapping'] ) : '{}';
         $allowed_roles = isset( $_POST['allowed_roles'] ) ? array_map( 'sanitize_text_field', (array) $_POST['allowed_roles'] ) : array();
         $button_text   = isset( $_POST['button_text'] ) ? sanitize_text_field( wp_unslash( $_POST['button_text'] ) ) : __( 'Download Document', 'document-generator' );
@@ -275,6 +276,7 @@ class DG_Admin {
         $post_id = is_int( $result ) ? $result : $template_id;
 
         update_post_meta( $post_id, '_dg_filename', $filename );
+        update_post_meta( $post_id, '_dg_repeat_source', $repeat_source );
         update_post_meta( $post_id, '_dg_mapping', $clean_mapping );
         update_post_meta( $post_id, '_dg_allowed_roles', $allowed_roles );
         update_post_meta( $post_id, '_dg_button_text', $button_text );

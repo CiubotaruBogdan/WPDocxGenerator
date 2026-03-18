@@ -13,6 +13,7 @@ class DG_Shortcode {
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
         add_action( 'wp_ajax_dg_download', array( $this, 'handle_download' ) );
         add_action( 'wp_ajax_nopriv_dg_download', array( $this, 'handle_download_denied' ) );
+        add_action( 'wp_ajax_dg_get_repeat_entries', array( $this, 'ajax_get_repeat_entries' ) );
 
         // Cleanup cron.
         add_action( 'dg_cleanup_temp', array( 'DG_Generator', 'cleanup_temp_files' ) );
@@ -81,8 +82,9 @@ class DG_Shortcode {
             esc_attr( $button_style['border_radius'] )
         );
 
-        $extra_class = sanitize_html_class( $atts['class'] );
-        $nonce       = wp_create_nonce( 'dg_download_' . $template_id );
+        $extra_class   = sanitize_html_class( $atts['class'] );
+        $nonce         = wp_create_nonce( 'dg_download_' . $template_id );
+        $repeat_source = get_post_meta( $template_id, '_dg_repeat_source', true );
 
         // Signal that the shortcode is being rendered (for asset enqueuing).
         do_action( 'dg_shortcode_rendered' );
@@ -93,21 +95,105 @@ class DG_Shortcode {
         }
 
         ob_start();
+
+        if ( ! empty( $repeat_source ) ) {
+            // Multi-document mode: render table with one download button per entry.
+            $this->render_repeat_table( $template_id, $repeat_source, $nonce, $inline_style, $button_text, $extra_class );
+        } else {
+            // Single document mode: standard button.
+            ?>
+            <div class="dg-download-wrapper <?php echo esc_attr( $extra_class ); ?>" data-template-id="<?php echo esc_attr( $template_id ); ?>">
+                <button type="button"
+                        class="dg-download-btn dg-btn-docx"
+                        style="<?php echo $inline_style; ?>"
+                        data-template-id="<?php echo esc_attr( $template_id ); ?>"
+                        data-format="docx"
+                        data-nonce="<?php echo esc_attr( $nonce ); ?>">
+                    <span class="dg-icon dg-icon-docx"></span>
+                    <?php echo esc_html( $button_text ); ?>
+                </button>
+                <div class="dg-status" style="display:none;"></div>
+            </div>
+            <?php
+        }
+
+        return ob_get_clean();
+    }
+
+    /**
+     * Render a table with one download button per repeating entry.
+     */
+    private function render_repeat_table( $template_id, $repeat_source, $nonce, $inline_style, $button_text, $extra_class ) {
+        // Get current post ID for context.
+        $context_post_id = get_the_ID();
+
+        $fields_handler = new DG_Fields();
+        $entries = $fields_handler->resolve_repeat_data(
+            array( 'source' => 'toolset_repeating', 'field' => $repeat_source ),
+            $context_post_id
+        );
+
+        if ( empty( $entries ) ) {
+            echo '<p class="dg-no-entries">' . esc_html__( 'No entries found.', 'document-generator' ) . '</p>';
+            return;
+        }
+
+        // Determine table columns from entry keys (exclude internal keys).
+        $skip_keys = array( 'index', 'post_id', 'title' );
+        $columns   = array();
+        if ( ! empty( $entries[0] ) ) {
+            foreach ( $entries[0] as $key => $val ) {
+                if ( ! in_array( $key, $skip_keys, true ) ) {
+                    $columns[ $key ] = $key;
+                }
+            }
+        }
+
+        // Try to get Toolset field labels for nicer column headers.
+        $toolset_fields = get_option( 'wpcf-fields', array() );
+        foreach ( $columns as $key => $label ) {
+            if ( isset( $toolset_fields[ $key ]['name'] ) ) {
+                $columns[ $key ] = $toolset_fields[ $key ]['name'];
+            }
+        }
         ?>
-        <div class="dg-download-wrapper <?php echo esc_attr( $extra_class ); ?>" data-template-id="<?php echo esc_attr( $template_id ); ?>">
-            <button type="button"
-                    class="dg-download-btn dg-btn-docx"
-                    style="<?php echo $inline_style; ?>"
-                    data-template-id="<?php echo esc_attr( $template_id ); ?>"
-                    data-format="docx"
-                    data-nonce="<?php echo esc_attr( $nonce ); ?>">
-                <span class="dg-icon dg-icon-docx"></span>
-                <?php echo esc_html( $button_text ); ?>
-            </button>
-            <div class="dg-status" style="display:none;"></div>
+        <div class="dg-repeat-table-wrapper <?php echo esc_attr( $extra_class ); ?>" data-template-id="<?php echo esc_attr( $template_id ); ?>">
+            <table class="dg-repeat-table">
+                <thead>
+                    <tr>
+                        <th class="dg-col-index">#</th>
+                        <?php foreach ( $columns as $key => $label ) : ?>
+                            <th><?php echo esc_html( $label ); ?></th>
+                        <?php endforeach; ?>
+                        <th class="dg-col-action"><?php esc_html_e( 'Download', 'document-generator' ); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ( $entries as $idx => $entry ) : ?>
+                        <tr>
+                            <td class="dg-col-index"><?php echo esc_html( $entry['index'] ?? ( $idx + 1 ) ); ?></td>
+                            <?php foreach ( $columns as $key => $label ) : ?>
+                                <td><?php echo esc_html( $entry[ $key ] ?? '' ); ?></td>
+                            <?php endforeach; ?>
+                            <td class="dg-col-action">
+                                <button type="button"
+                                        class="dg-download-btn dg-btn-docx dg-btn-small"
+                                        style="<?php echo $inline_style; ?>"
+                                        data-template-id="<?php echo esc_attr( $template_id ); ?>"
+                                        data-format="docx"
+                                        data-nonce="<?php echo esc_attr( $nonce ); ?>"
+                                        data-entry-index="<?php echo esc_attr( $idx ); ?>">
+                                    <span class="dg-icon dg-icon-docx"></span>
+                                    <?php echo esc_html( $button_text ); ?>
+                                </button>
+                                <div class="dg-status" style="display:none;"></div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
         <?php
-        return ob_get_clean();
     }
 
     /**
@@ -155,6 +241,7 @@ class DG_Shortcode {
     public function handle_download() {
         $template_id = isset( $_POST['template_id'] ) ? absint( $_POST['template_id'] ) : 0;
         $post_id     = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+        $entry_index = isset( $_POST['entry_index'] ) ? intval( $_POST['entry_index'] ) : -1;
 
         if ( ! $template_id ) {
             wp_send_json_error( __( 'Invalid template.', 'document-generator' ) );
@@ -172,7 +259,7 @@ class DG_Shortcode {
         }
 
         $generator = new DG_Generator();
-        $file_path = $generator->generate( $template_id, $post_id );
+        $file_path = $generator->generate( $template_id, $post_id, $entry_index );
 
         if ( is_wp_error( $file_path ) ) {
             wp_send_json_error( $file_path->get_error_message() );

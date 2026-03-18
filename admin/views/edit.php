@@ -10,6 +10,7 @@ $filename      = '';
 $mapping       = array();
 $allowed_roles = array();
 $button_text   = __( 'Download Document', 'document-generator' );
+$repeat_source = '';
 $button_style  = array(
     'bg_color'     => '#2b579a',
     'text_color'   => '#ffffff',
@@ -27,6 +28,7 @@ if ( $is_edit ) {
         $mapping       = get_post_meta( $template_id, '_dg_mapping', true );
         $allowed_roles = get_post_meta( $template_id, '_dg_allowed_roles', true );
         $button_text   = get_post_meta( $template_id, '_dg_button_text', true );
+        $repeat_source = get_post_meta( $template_id, '_dg_repeat_source', true );
         $saved_style   = get_post_meta( $template_id, '_dg_button_style', true );
         if ( is_array( $saved_style ) ) {
             $button_style = wp_parse_args( $saved_style, $button_style );
@@ -49,6 +51,9 @@ $wp_roles = wp_roles()->get_names();
 // Get field sources.
 $fields_handler = new DG_Fields();
 $sources = $fields_handler->get_sources();
+
+// Get available repeating sources for the dropdown.
+$repeating_sources = $fields_handler->get_toolset_repeating_fields();
 ?>
 
 <div class="wrap dg-wrap">
@@ -118,6 +123,23 @@ $sources = $fields_handler->get_sources();
                             <?php endforeach; ?>
                             <p class="description"><?php esc_html_e( 'Leave unchecked to allow all logged-in users.', 'document-generator' ); ?></p>
                         </fieldset>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="dg-repeat-source"><?php esc_html_e( 'Repeating Source', 'document-generator' ); ?></label></th>
+                    <td>
+                        <select id="dg-repeat-source" name="repeat_source">
+                            <option value=""><?php esc_html_e( '— None (single document) —', 'document-generator' ); ?></option>
+                            <?php foreach ( $repeating_sources as $rs ) : ?>
+                                <option value="<?php echo esc_attr( $rs['value'] ); ?>"
+                                        <?php selected( $repeat_source, $rs['value'] ); ?>>
+                                    <?php echo esc_html( $rs['label'] ); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description">
+                            <?php esc_html_e( 'When set, the shortcode renders a table with one download button per repeating entry. Placeholders mapped to Toolset fields will be resolved per entry.', 'document-generator' ); ?>
+                        </p>
                     </td>
                 </tr>
             </table>

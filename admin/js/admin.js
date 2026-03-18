@@ -453,6 +453,7 @@
                 template_id: $('input[name="template_id"]').val(),
                 title: $('#dg-title').val(),
                 filename: $('#dg-filename').val(),
+                repeat_source: $('#dg-repeat-source').val() || '',
                 mapping: JSON.stringify(this.mapping),
                 allowed_roles: [],
                 button_text: $('#dg-button-text').val(),

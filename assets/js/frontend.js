@@ -15,6 +15,7 @@
         var templateId = $btn.data('template-id');
         var format = $btn.data('format');
         var nonce = $btn.data('nonce');
+        var entryIndex = $btn.data('entry-index');
 
         // Get current post ID from body class.
         // WP adds postid-{ID} for posts/CPTs and page-id-{ID} for pages.
@@ -28,16 +29,23 @@
         $btn.addClass('dg-loading').prop('disabled', true);
         $status.hide().removeClass('dg-error dg-success');
 
+        var requestData = {
+            action: 'dg_download',
+            template_id: templateId,
+            format: format,
+            nonce: nonce,
+            post_id: postId
+        };
+
+        // Include entry_index for repeating source downloads.
+        if (typeof entryIndex !== 'undefined' && entryIndex !== '') {
+            requestData.entry_index = entryIndex;
+        }
+
         $.ajax({
             url: dgFrontend.ajaxUrl,
             type: 'POST',
-            data: {
-                action: 'dg_download',
-                template_id: templateId,
-                format: format,
-                nonce: nonce,
-                post_id: postId
-            },
+            data: requestData,
             success: function(response) {
                 $btn.removeClass('dg-loading').prop('disabled', false);
 
