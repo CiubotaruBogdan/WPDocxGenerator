@@ -96,12 +96,14 @@ class DG_Generator {
         if ( $entry_data !== null ) {
             $template_handler_tmp = new DG_Template();
             $extracted = $template_handler_tmp->extract_placeholders( $template_path );
+            $child_post_id = isset( $entry_data['post_id'] ) ? (int) $entry_data['post_id'] : 0;
+
             if ( ! is_wp_error( $extracted ) ) {
                 foreach ( $extracted['placeholders'] as $ph ) {
                     if ( isset( $replacements[ $ph ] ) ) {
                         continue;
                     }
-                    // Try direct match, then dash/underscore normalization.
+                    // Try direct match in entry data, then dash/underscore normalization.
                     $variants = array(
                         $ph,
                         str_replace( '_', '-', $ph ),
@@ -110,7 +112,17 @@ class DG_Generator {
                     foreach ( array_unique( $variants ) as $key ) {
                         if ( array_key_exists( $key, $entry_data ) ) {
                             $replacements[ $ph ] = (string) $entry_data[ $key ];
-                            break;
+                            break 2;
+                        }
+                    }
+                    // Fallback: read directly from child post meta (wpcf- prefix).
+                    if ( $child_post_id ) {
+                        foreach ( array_unique( $variants ) as $key ) {
+                            $meta_val = get_post_meta( $child_post_id, 'wpcf-' . $key, true );
+                            if ( $meta_val !== '' && $meta_val !== false ) {
+                                $replacements[ $ph ] = (string) $meta_val;
+                                break;
+                            }
                         }
                     }
                 }
