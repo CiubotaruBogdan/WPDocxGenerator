@@ -150,7 +150,7 @@ $repeating_sources = $fields_handler->get_toolset_repeating_fields();
                             <?php endif; ?>
                         </select>
                         <p class="description">
-                            <?php esc_html_e( 'When set, the shortcode renders a table with one download button per repeating entry. Placeholders mapped to Toolset fields will be resolved per entry.', 'document-generator' ); ?>
+                            <?php esc_html_e( 'When set, the shortcode renders a table with one download button per repeating entry. Placeholders matching entry field names are auto-mapped (no manual mapping needed). Use the field mapping below only for placeholders from other sources (user, site, date, etc.).', 'document-generator' ); ?>
                         </p>
                     </td>
                 </tr>
