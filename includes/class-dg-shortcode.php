@@ -178,11 +178,19 @@ class DG_Shortcode {
             wp_send_json_error( $file_path->get_error_message() );
         }
 
+        // Build download filename: AAAALLZZ_N_###_[denumire_document]-[02512].docx
+        $document_name = get_post_meta( $template_id, '_dg_document_name', true );
+        if ( $document_name ) {
+            $download_name = wp_date( 'Ymd' ) . '_N_###_' . sanitize_file_name( $document_name ) . '-02512.docx';
+        } else {
+            $download_name = sanitize_file_name( get_the_title( $template_id ) ) . '.docx';
+        }
+
         // Create a temporary download token.
         $token = wp_generate_password( 32, false );
         set_transient( 'dg_download_' . $token, array(
             'path' => $file_path,
-            'name' => sanitize_file_name( get_the_title( $template_id ) ) . '.docx',
+            'name' => $download_name,
         ), 300 ); // 5 minute expiry.
 
         wp_send_json_success( array(
