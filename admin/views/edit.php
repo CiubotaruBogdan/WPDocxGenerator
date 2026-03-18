@@ -9,7 +9,6 @@ $title         = '';
 $filename      = '';
 $mapping       = array();
 $allowed_roles = array();
-$document_name = '';
 $button_text   = __( 'Download Document', 'document-generator' );
 $button_style  = array(
     'bg_color'     => '#2b579a',
@@ -27,7 +26,6 @@ if ( $is_edit ) {
         $filename      = get_post_meta( $template_id, '_dg_filename', true );
         $mapping       = get_post_meta( $template_id, '_dg_mapping', true );
         $allowed_roles = get_post_meta( $template_id, '_dg_allowed_roles', true );
-        $document_name = get_post_meta( $template_id, '_dg_document_name', true );
         $button_text   = get_post_meta( $template_id, '_dg_button_text', true );
         $saved_style   = get_post_meta( $template_id, '_dg_button_style', true );
         if ( is_array( $saved_style ) ) {
@@ -74,26 +72,6 @@ $sources = $fields_handler->get_sources();
                         <input type="text" id="dg-title" name="title" class="regular-text"
                                value="<?php echo esc_attr( $title ); ?>"
                                placeholder="<?php esc_attr_e( 'e.g., Employment Contract', 'document-generator' ); ?>" required>
-                    </td>
-                </tr>
-                <tr>
-                    <th><label for="dg-document-name"><?php esc_html_e( 'Document Name', 'document-generator' ); ?></label></th>
-                    <td>
-                        <input type="text" id="dg-document-name" name="document_name" class="regular-text"
-                               value="<?php echo esc_attr( $document_name ); ?>"
-                               placeholder="<?php esc_attr_e( 'e.g., Contract Vanzare', 'document-generator' ); ?>">
-                        <p class="description">
-                            <?php esc_html_e( 'Used in the download filename and available as #denumire_document# placeholder.', 'document-generator' ); ?>
-                            <br>
-                            <?php
-                            $example_name = $document_name ? $document_name : 'ContractVanzare';
-                            printf(
-                                /* translators: %s: example filename */
-                                esc_html__( 'Download filename: %s', 'document-generator' ),
-                                '<code>' . esc_html( wp_date( 'Ymd' ) . '_N_###_' . $example_name . '-02512.docx' ) . '</code>'
-                            );
-                            ?>
-                        </p>
                     </td>
                 </tr>
                 <tr>
