@@ -5,8 +5,8 @@
         e.preventDefault();
 
         var $btn = $(this);
-        var $wrapper = $btn.closest('.dg-download-wrapper');
-        var $status = $wrapper.find('.dg-status');
+        var $wrapper = $btn.closest('.dg-download-wrapper, .dg-repeat-table-wrapper, td');
+        var $status = $btn.siblings('.dg-status');
 
         if ($btn.hasClass('dg-loading')) {
             return;

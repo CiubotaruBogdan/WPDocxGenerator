@@ -268,13 +268,21 @@ class DG_Fields {
 
                 $slugs = array_filter( array_map( 'trim', explode( ',', $group_fields_str ) ) );
                 foreach ( $slugs as $slug ) {
+                    // Skip internal/hidden fields (e.g. _repeatable_group_290).
+                    if ( strpos( $slug, '_' ) === 0 ) {
+                        continue;
+                    }
+                    // Skip if not a known Toolset field.
+                    if ( ! isset( $toolset_fields[ $slug ] ) ) {
+                        continue;
+                    }
                     $meta_key = 'wpcf-' . $slug;
                     // Skip if already listed from postmeta query.
                     if ( in_array( $meta_key, $existing_meta, true ) ) {
                         continue;
                     }
-                    $label = isset( $toolset_fields[ $slug ]['name'] ) ? $toolset_fields[ $slug ]['name'] : $slug;
-                    $type  = isset( $toolset_fields[ $slug ]['type'] ) ? $toolset_fields[ $slug ]['type'] : 'text';
+                    $label = $toolset_fields[ $slug ]['name'] ?? $slug;
+                    $type  = $toolset_fields[ $slug ]['type'] ?? 'text';
                     $fields[] = array(
                         'value' => 'cpt_meta_wpcf-' . $slug,
                         'label' => sprintf( __( 'Toolset: %s (%s)', 'document-generator' ), $label, $type ),
