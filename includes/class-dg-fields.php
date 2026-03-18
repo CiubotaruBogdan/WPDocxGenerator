@@ -1036,11 +1036,6 @@ class DG_Fields {
                     $raw_value = is_array( $values ) ? $values[0] : $values;
                     $formatted = $this->maybe_format_toolset_date( $clean_key, $raw_value );
                     $row[ $clean_key ] = $formatted;
-                    // Also store underscore variant for placeholder matching.
-                    $underscore_key = str_replace( '-', '_', $clean_key );
-                    if ( $underscore_key !== $clean_key ) {
-                        $row[ $underscore_key ] = $formatted;
-                    }
                 }
             }
 

@@ -32,13 +32,13 @@ class DG_Generator {
             return new WP_Error( 'template_missing', __( 'Template file not found.', 'document-generator' ) );
         }
 
-        if ( ! is_array( $mapping ) || empty( $mapping ) ) {
-            return new WP_Error( 'no_mapping', __( 'No field mapping configured for this template.', 'document-generator' ) );
-        }
-
         $template_path  = dg_get_templates_dir() . $filename;
         $user_id        = get_current_user_id();
         $repeat_source  = get_post_meta( $template_id, '_dg_repeat_source', true );
+
+        if ( ! is_array( $mapping ) ) {
+            $mapping = array();
+        }
 
         // If entry_index is specified and we have a repeat source, pre-fetch the entry data.
         $entry_data = null;
@@ -82,13 +82,35 @@ class DG_Generator {
                 continue;
             }
 
-            $value = $this->fields_handler->resolve_field_value(
-                $config,
-                $context_post_id,
-                $user_id
-            );
+            if ( ! empty( $source ) && ! empty( $field ) ) {
+                $value = $this->fields_handler->resolve_field_value(
+                    $config,
+                    $context_post_id,
+                    $user_id
+                );
+                $replacements[ $placeholder ] = (string) $value;
+            }
+        }
 
-            $replacements[ $placeholder ] = (string) $value;
+        // Auto-mapping: resolve unmapped placeholders from repeating entry data.
+        if ( $entry_data !== null ) {
+            $template_handler_tmp = new DG_Template();
+            $extracted = $template_handler_tmp->extract_placeholders( $template_path );
+            if ( ! is_wp_error( $extracted ) ) {
+                foreach ( $extracted['placeholders'] as $ph ) {
+                    if ( isset( $replacements[ $ph ] ) ) {
+                        continue;
+                    }
+                    // Try direct match, then dash-to-underscore normalization.
+                    $variants = array( $ph, str_replace( '_', '-', $ph ) );
+                    foreach ( $variants as $key ) {
+                        if ( array_key_exists( $key, $entry_data ) ) {
+                            $replacements[ $ph ] = (string) $entry_data[ $key ];
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         // Generate the document.
