@@ -45,13 +45,17 @@ class DG_Shortcode {
             return '<p>Nu sunt pe o pagină individuală.</p>';
         }
 
-        // Get relationship slug.
-        $relationship = get_post_meta( $template_id, '_dg_toolset_relationship', true );
+        // Get repeat source (e.g. 'toolset_rel_solicitaremodificare').
+        $repeat_source = get_post_meta( $template_id, '_dg_repeat_source', true );
+        $relationship = '';
+        if ( strpos( $repeat_source, 'toolset_rel_' ) === 0 ) {
+            $relationship = substr( $repeat_source, 12 );
+        }
 
         $fields = new DG_Fields();
         $entries = $fields->resolve_repeat_data( array(
             'source' => 'toolset_repeating',
-            'field'  => 'toolset_rel_' . $relationship,
+            'field'  => $repeat_source,
         ), $post_id );
 
         // Also extract template placeholders.
