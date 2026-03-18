@@ -30,12 +30,12 @@ class DG_Template {
             $content = $this->merge_split_runs( $content );
 
             // Match standard placeholders: #name#
-            if ( preg_match_all( '/#([a-zA-Z0-9_]+)#/', $content, $matches ) ) {
+            if ( preg_match_all( '/#([a-zA-Z0-9_-]+)#/', $content, $matches ) ) {
                 $placeholders = array_merge( $placeholders, $matches[1] );
             }
 
             // Match repeat blocks: #repeat:source_name# and their inner placeholders.
-            if ( preg_match_all( '/#repeat:([a-zA-Z0-9_]+)#/', $content, $rep_matches ) ) {
+            if ( preg_match_all( '/#repeat:([a-zA-Z0-9_-]+)#/', $content, $rep_matches ) ) {
                 foreach ( $rep_matches[1] as $block_name ) {
                     $repeat_blocks[] = $block_name;
                 }
@@ -172,7 +172,7 @@ class DG_Template {
         }
 
         // If no placeholders in this paragraph, skip.
-        if ( ! preg_match( '/#[a-zA-Z0-9_]+#/', $full_text ) && ! preg_match( '/#repeat:[a-zA-Z0-9_]+#/', $full_text ) ) {
+        if ( ! preg_match( '/#[a-zA-Z0-9_-]+#/', $full_text ) && ! preg_match( '/#repeat:[a-zA-Z0-9_-]+#/', $full_text ) ) {
             return;
         }
 
