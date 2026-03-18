@@ -829,9 +829,15 @@ class DG_Fields {
                 $child_meta = get_post_meta( $child_id );
                 foreach ( $child_meta as $key => $values ) {
                     if ( strpos( $key, 'wpcf-' ) === 0 ) {
-                        $clean_key = substr( $key, 5 );
+                        $clean_key = substr( $key, 5 ); // e.g. 'prevedere-actuala'
                         $raw_value = is_array( $values ) ? $values[0] : $values;
-                        $row[ $clean_key ] = $this->maybe_format_toolset_date( $clean_key, $raw_value );
+                        $formatted = $this->maybe_format_toolset_date( $clean_key, $raw_value );
+                        $row[ $clean_key ] = $formatted;
+                        // Also store underscore variant so placeholders like #prevedere_actuala# match.
+                        $underscore_key = str_replace( '-', '_', $clean_key );
+                        if ( $underscore_key !== $clean_key ) {
+                            $row[ $underscore_key ] = $formatted;
+                        }
                     }
                 }
 

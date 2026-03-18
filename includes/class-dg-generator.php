@@ -54,6 +54,19 @@ class DG_Generator {
             }
         }
 
+        // Build a normalized lookup from entry data (dash ↔ underscore).
+        $entry_lookup = array();
+        if ( $entry_data !== null ) {
+            foreach ( $entry_data as $key => $val ) {
+                $entry_lookup[ $key ] = (string) $val;
+                // Also store underscore variant so placeholder names match.
+                $alt = str_replace( '-', '_', $key );
+                if ( $alt !== $key ) {
+                    $entry_lookup[ $alt ] = (string) $val;
+                }
+            }
+        }
+
         // Resolve all field values.
         $replacements = array();
         $repeat_data  = array();
@@ -65,10 +78,19 @@ class DG_Generator {
             $source = $config['source'] ?? '';
             $field  = $config['field'] ?? '';
 
-            // If we have per-entry data, check if this field exists in the entry.
-            if ( $entry_data !== null && $this->field_in_entry( $field, $entry_data ) ) {
-                $replacements[ $placeholder ] = (string) ( $entry_data[ $field ] ?? '' );
-                continue;
+            // If we have per-entry data, try to match by field config OR by placeholder name.
+            if ( $entry_data !== null ) {
+                // Match by field from config.
+                if ( $this->field_in_entry( $field, $entry_data ) ) {
+                    $clean = ( strpos( $field, 'wpcf-' ) === 0 ) ? substr( $field, 5 ) : $field;
+                    $replacements[ $placeholder ] = $entry_lookup[ $clean ] ?? (string) ( $entry_data[ $field ] ?? '' );
+                    continue;
+                }
+                // Match by placeholder name (auto-match: e.g. prevedere_actuala → prevedere-actuala).
+                if ( isset( $entry_lookup[ $placeholder ] ) ) {
+                    $replacements[ $placeholder ] = $entry_lookup[ $placeholder ];
+                    continue;
+                }
             }
 
             // Check if this is a repeat block mapping (normal mode, no per-entry).
