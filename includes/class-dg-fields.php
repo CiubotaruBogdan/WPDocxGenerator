@@ -413,10 +413,23 @@ class DG_Fields {
             }
         }
 
-        // Also check for Toolset RFG (Repeating Field Groups) if available.
+        // Check for Toolset RFG (Repeating Field Groups) via API.
         if ( function_exists( 'toolset_get_related_posts' ) ) {
             $rfg_post_types = get_post_types( array( 'public' => false ), 'objects' );
             foreach ( $rfg_post_types as $pt ) {
+                if ( strpos( $pt->name, 'rfg_' ) === 0 ) {
+                    $fields[] = array(
+                        'value' => 'toolset_rfg_' . $pt->name,
+                        'label' => sprintf( __( 'RFG: %s', 'document-generator' ), $pt->label ),
+                    );
+                }
+            }
+        }
+
+        // Fallback: detect RFGs from registered post types even without the API function.
+        if ( ! function_exists( 'toolset_get_related_posts' ) ) {
+            $all_post_types = get_post_types( array(), 'objects' );
+            foreach ( $all_post_types as $pt ) {
                 if ( strpos( $pt->name, 'rfg_' ) === 0 ) {
                     $fields[] = array(
                         'value' => 'toolset_rfg_' . $pt->name,
@@ -766,36 +779,63 @@ class DG_Fields {
         }
 
         // RFG (Repeating Field Groups).
-        if ( strpos( $field, 'toolset_rfg_' ) === 0 && function_exists( 'toolset_get_related_posts' ) ) {
+        if ( strpos( $field, 'toolset_rfg_' ) === 0 ) {
             $rfg_type = substr( $field, 12 );
 
-            $related = toolset_get_related_posts(
-                $post_id,
-                $rfg_type,
-                array( 'query_by_role' => 'parent', 'return' => 'post_id' )
-            );
+            $child_ids = array();
 
-            if ( is_array( $related ) ) {
-                foreach ( $related as $index => $child_id ) {
-                    $child_post = get_post( $child_id );
-                    $row = array(
-                        'index'   => $index + 1,
-                        'title'   => $child_post ? $child_post->post_title : '',
-                        'post_id' => $child_id,
-                    );
-
-                    // Get all meta for this child.
-                    $child_meta = get_post_meta( $child_id );
-                    foreach ( $child_meta as $key => $values ) {
-                        if ( strpos( $key, 'wpcf-' ) === 0 ) {
-                            $clean_key = substr( $key, 5 );
-                            $raw_value = is_array( $values ) ? $values[0] : $values;
-                            $row[ $clean_key ] = $this->maybe_format_toolset_date( $clean_key, $raw_value );
-                        }
-                    }
-
-                    $rows[] = $row;
+            // Try Toolset API first.
+            if ( function_exists( 'toolset_get_related_posts' ) ) {
+                $related = toolset_get_related_posts(
+                    $post_id,
+                    $rfg_type,
+                    array( 'query_by_role' => 'parent', 'return' => 'post_id' )
+                );
+                if ( is_array( $related ) ) {
+                    $child_ids = $related;
                 }
+            }
+
+            // Fallback: query Toolset association tables directly.
+            if ( empty( $child_ids ) ) {
+                $child_ids = $this->get_rfg_children_from_db( $post_id, $rfg_type );
+            }
+
+            // Final fallback: query by post_parent and post_type.
+            if ( empty( $child_ids ) ) {
+                $children = get_posts( array(
+                    'post_type'      => $rfg_type,
+                    'post_parent'    => $post_id,
+                    'posts_per_page' => -1,
+                    'orderby'        => 'menu_order date',
+                    'order'          => 'ASC',
+                    'post_status'    => 'any',
+                    'fields'         => 'ids',
+                ) );
+                if ( ! empty( $children ) ) {
+                    $child_ids = $children;
+                }
+            }
+
+            foreach ( $child_ids as $index => $child_id ) {
+                $child_post = get_post( $child_id );
+                $row = array(
+                    'index'   => $index + 1,
+                    'title'   => $child_post ? $child_post->post_title : '',
+                    'post_id' => $child_id,
+                );
+
+                // Get all meta for this child.
+                $child_meta = get_post_meta( $child_id );
+                foreach ( $child_meta as $key => $values ) {
+                    if ( strpos( $key, 'wpcf-' ) === 0 ) {
+                        $clean_key = substr( $key, 5 );
+                        $raw_value = is_array( $values ) ? $values[0] : $values;
+                        $row[ $clean_key ] = $this->maybe_format_toolset_date( $clean_key, $raw_value );
+                    }
+                }
+
+                $rows[] = $row;
             }
         }
 
@@ -999,6 +1039,46 @@ class DG_Fields {
      */
     private function is_toolset_active() {
         return defined( 'WPCF_VERSION' ) || class_exists( 'WPCF_Loader' );
+    }
+
+    /**
+     * Get RFG child post IDs by querying Toolset association tables directly.
+     */
+    private function get_rfg_children_from_db( $parent_post_id, $rfg_post_type ) {
+        global $wpdb;
+
+        $associations_table = $wpdb->prefix . 'toolset_associations';
+        $elements_table     = $wpdb->prefix . 'toolset_connected_elements';
+        $relationships_table = $wpdb->prefix . 'toolset_relationships';
+
+        // Check if tables exist.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $table_exists = $wpdb->get_var(
+            $wpdb->prepare( 'SHOW TABLES LIKE %s', $associations_table )
+        );
+        if ( ! $table_exists ) {
+            return array();
+        }
+
+        // Find the relationship that links to this RFG post type.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $child_ids = $wpdb->get_col( $wpdb->prepare(
+            "SELECT p.ID
+             FROM {$wpdb->posts} p
+             INNER JOIN {$associations_table} a ON 1=1
+             INNER JOIN {$elements_table} ce_parent ON a.parent_id = ce_parent.group_id
+             INNER JOIN {$elements_table} ce_child ON a.child_id = ce_child.group_id
+             INNER JOIN {$relationships_table} r ON a.relationship_id = r.id
+             WHERE ce_parent.element_id = %d
+               AND p.ID = ce_child.element_id
+               AND p.post_type = %s
+               AND p.post_status IN ('publish','draft','private','inherit')
+             ORDER BY p.menu_order ASC, p.ID ASC",
+            $parent_post_id,
+            $rfg_post_type
+        ) );
+
+        return ! empty( $child_ids ) ? array_map( 'intval', $child_ids ) : array();
     }
 
     // ── Date Generale integration ─────────────────────────────────────────
