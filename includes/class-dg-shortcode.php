@@ -145,30 +145,38 @@ class DG_Shortcode {
         $extracted     = $template_handler->extract_placeholders( $template_path );
         $template_phs  = ! is_wp_error( $extracted ) ? $extracted['placeholders'] : array();
 
-        // Build columns: only show entry keys that match a template placeholder.
-        $skip_keys      = array( 'index', 'post_id', 'title' );
-        $columns        = array();
+        // Build columns from template placeholders, matched to entry data keys.
+        $skip_phs       = array( 'denumire_document' );
+        $columns        = array(); // key => label (key is the entry data key to use)
         $toolset_fields = get_option( 'wpcf-fields', array() );
+        $entry_keys     = ! empty( $entries[0] ) ? array_keys( $entries[0] ) : array();
+        $internal_keys  = array( 'index', 'post_id', 'title' );
 
-        if ( ! empty( $entries[0] ) ) {
-            foreach ( $entries[0] as $key => $val ) {
-                if ( in_array( $key, $skip_keys, true ) ) {
-                    continue;
-                }
-                // Check if this key (or its underscore variant) matches a placeholder.
-                $underscore_key = str_replace( '-', '_', $key );
-                if ( ! empty( $template_phs ) && ! in_array( $key, $template_phs, true ) && ! in_array( $underscore_key, $template_phs, true ) ) {
-                    continue;
-                }
-                // Use Toolset field label as column header.
-                $label = $key;
-                if ( isset( $toolset_fields[ $key ]['name'] ) ) {
-                    $label = $toolset_fields[ $key ]['name'];
-                } elseif ( isset( $toolset_fields[ str_replace( '_', '-', $key ) ]['name'] ) ) {
-                    $label = $toolset_fields[ str_replace( '_', '-', $key ) ]['name'];
-                }
-                $columns[ $key ] = $label;
+        foreach ( $template_phs as $ph ) {
+            if ( in_array( $ph, $skip_phs, true ) ) {
+                continue;
             }
+            // Find matching entry data key (direct, dash variant, or underscore variant).
+            $matched_key = null;
+            $variants = array( $ph, str_replace( '_', '-', $ph ), str_replace( '-', '_', $ph ) );
+            foreach ( array_unique( $variants ) as $variant ) {
+                if ( in_array( $variant, $entry_keys, true ) && ! in_array( $variant, $internal_keys, true ) ) {
+                    $matched_key = $variant;
+                    break;
+                }
+            }
+
+            // Determine label from Toolset field definition.
+            $label_key = $matched_key ? $matched_key : $ph;
+            $label = $label_key;
+            if ( isset( $toolset_fields[ $label_key ]['name'] ) ) {
+                $label = $toolset_fields[ $label_key ]['name'];
+            } elseif ( isset( $toolset_fields[ str_replace( '_', '-', $label_key ) ]['name'] ) ) {
+                $label = $toolset_fields[ str_replace( '_', '-', $label_key ) ]['name'];
+            }
+
+            // Use the matched entry key, or fall back to placeholder name.
+            $columns[ $matched_key ? $matched_key : $ph ] = $label;
         }
         ?>
         <div class="dg-repeat-table-wrapper <?php echo esc_attr( $extra_class ); ?>" data-template-id="<?php echo esc_attr( $template_id ); ?>">
@@ -186,8 +194,21 @@ class DG_Shortcode {
                     <?php foreach ( $entries as $idx => $entry ) : ?>
                         <tr>
                             <td class="dg-col-index"><?php echo esc_html( $entry['index'] ?? ( $idx + 1 ) ); ?></td>
-                            <?php foreach ( $columns as $key => $label ) : ?>
-                                <td><?php echo esc_html( $entry[ $key ] ?? '' ); ?></td>
+                            <?php foreach ( $columns as $key => $label ) :
+                                $cell_val = $entry[ $key ] ?? '';
+                                // Fallback: read directly from child post meta if not in entry data.
+                                if ( $cell_val === '' && ! empty( $entry['post_id'] ) ) {
+                                    $meta_variants = array( $key, str_replace( '_', '-', $key ), str_replace( '-', '_', $key ) );
+                                    foreach ( array_unique( $meta_variants ) as $mk ) {
+                                        $mv = get_post_meta( $entry['post_id'], 'wpcf-' . $mk, true );
+                                        if ( $mv !== '' && $mv !== false ) {
+                                            $cell_val = $mv;
+                                            break;
+                                        }
+                                    }
+                                }
+                            ?>
+                                <td><?php echo esc_html( $cell_val ); ?></td>
                             <?php endforeach; ?>
                             <td class="dg-col-action">
                                 <button type="button"
