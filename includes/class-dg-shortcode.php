@@ -49,7 +49,10 @@ class DG_Shortcode {
         $relationship = get_post_meta( $template_id, '_dg_toolset_relationship', true );
 
         $fields = new DG_Fields();
-        $entries = $fields->resolve_field( 'toolset_rel_' . $relationship, $post_id, 'toolset' );
+        $entries = $fields->resolve_repeat_data( array(
+            'source' => 'toolset_repeating',
+            'field'  => 'toolset_rel_' . $relationship,
+        ), $post_id );
 
         // Also extract template placeholders.
         $filename      = get_post_meta( $template_id, '_dg_filename', true );
