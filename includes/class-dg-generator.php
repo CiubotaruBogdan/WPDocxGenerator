@@ -112,7 +112,7 @@ class DG_Generator {
                     foreach ( array_unique( $variants ) as $key ) {
                         if ( array_key_exists( $key, $entry_data ) ) {
                             $replacements[ $ph ] = (string) $entry_data[ $key ];
-                            break 2;
+                            break;
                         }
                     }
                     // Fallback: read directly from child post meta (wpcf- prefix).

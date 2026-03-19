@@ -269,8 +269,11 @@ class DG_Shortcode {
                 $label = $toolset_fields[ str_replace( '_', '-', $label_key ) ]['name'];
             }
 
-            // Use the matched entry key, or fall back to placeholder name.
-            $columns[ $matched_key ? $matched_key : $ph ] = $label;
+            // Only include columns that have a matching entry data key (repeatable fields).
+            if ( ! $matched_key ) {
+                continue;
+            }
+            $columns[ $matched_key ] = $label;
         }
         ?>
         <div class="dg-repeat-table-wrapper <?php echo esc_attr( $extra_class ); ?>" data-template-id="<?php echo esc_attr( $template_id ); ?>">
