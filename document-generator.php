@@ -18,6 +18,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+if ( defined( 'DG_VERSION' ) ) {
+    return; // Another copy of the plugin is already loaded.
+}
+
 define( 'DG_VERSION', '1.0' );
 define( 'DG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DG_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
