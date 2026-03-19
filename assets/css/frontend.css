@@ -98,6 +98,10 @@
     }
 }
 
+.dg-hidden {
+    display: none;
+}
+
 /* Status message */
 .dg-status {
     margin-top: 8px;
